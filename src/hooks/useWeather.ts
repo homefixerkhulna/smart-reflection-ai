@@ -18,7 +18,7 @@ interface HourlyForecast {
 
 // Replace with your OpenWeatherMap API key
 // Get one free at: https://openweathermap.org/api
-const OPENWEATHER_API_KEY = "YOUR_API_KEY_HERE";
+const OPENWEATHER_API_KEY = "4d819668125a0313171a957cb60fa6db";
 
 export const useWeather = () => {
   const [weather, setWeather] = useState<WeatherData | null>(null);

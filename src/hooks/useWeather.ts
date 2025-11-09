@@ -16,8 +16,7 @@ interface HourlyForecast {
   icon: string;
 }
 
-// Replace with your OpenWeatherMap API key
-// Get one free at: https://openweathermap.org/api
+// OpenWeatherMap API key
 const OPENWEATHER_API_KEY = "4d819668125a0313171a957cb60fa6db";
 
 export const useWeather = () => {
@@ -28,28 +27,6 @@ export const useWeather = () => {
   useEffect(() => {
     const fetchWeather = async (lat: number, lon: number) => {
       try {
-        if (OPENWEATHER_API_KEY === "YOUR_API_KEY_HERE") {
-          // Use mock data if no API key
-          setWeather({
-            temp: 22,
-            condition: 'Partly Cloudy',
-            humidity: 65,
-            wind: 12,
-            icon: 'cloud',
-            location: 'Demo Location',
-            hourlyForecast: [
-              { time: '14:00', temp: 23, icon: '02d' },
-              { time: '15:00', temp: 24, icon: '01d' },
-              { time: '16:00', temp: 25, icon: '01d' },
-              { time: '17:00', temp: 23, icon: '02d' },
-              { time: '18:00', temp: 21, icon: '03d' },
-            ]
-          });
-          setError("Add your OpenWeatherMap API key to see real data");
-          setLoading(false);
-          return;
-        }
-
         // Fetch current weather
         const currentWeatherResponse = await fetch(
           `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&appid=${OPENWEATHER_API_KEY}`

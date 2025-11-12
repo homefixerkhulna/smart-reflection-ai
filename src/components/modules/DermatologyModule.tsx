@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { CameraCapture } from "@/components/CameraCapture";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 export const DermatologyModule = () => {
   const [showCamera, setShowCamera] = useState(false);
@@ -11,6 +12,7 @@ export const DermatologyModule = () => {
   const [analysis, setAnalysis] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   // Mock data - foundation for AI integration
   const metrics = [
@@ -20,6 +22,15 @@ export const DermatologyModule = () => {
   ];
 
   const handleCapture = async (image: string, blob: Blob) => {
+    if (!user) {
+      toast({
+        title: "Login required",
+        description: "Please log in to save your analysis.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setCapturedImage(image);
     setShowCamera(false);
     setIsAnalyzing(true);
@@ -48,10 +59,32 @@ export const DermatologyModule = () => {
 
       if (data?.analysis) {
         setAnalysis(data.analysis);
-        toast({
-          title: "Analysis complete",
-          description: "Your skin analysis is ready!",
-        });
+        
+        // Save to database
+        const { error: dbError } = await supabase
+          .from('skin_analyses')
+          .insert({
+            user_id: user.id,
+            image_url: image,
+            analysis_text: data.analysis,
+            skin_health_score: 85,
+            hydration_score: 78,
+            texture_score: 82,
+          });
+
+        if (dbError) {
+          console.error('Error saving analysis:', dbError);
+          toast({
+            title: "Warning",
+            description: "Analysis complete but failed to save to history.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Analysis complete",
+            description: "Your skin analysis is ready and saved!",
+          });
+        }
       }
     } catch (error) {
       console.error('Error in analysis:', error);

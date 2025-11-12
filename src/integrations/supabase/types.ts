@@ -14,7 +14,75 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          email: string
+          full_name: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          email: string
+          full_name?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      skin_analyses: {
+        Row: {
+          analysis_text: string
+          brightness_score: number | null
+          created_at: string
+          hydration_score: number | null
+          id: string
+          image_url: string
+          overall_quality_score: number | null
+          sharpness_score: number | null
+          skin_health_score: number | null
+          texture_score: number | null
+          user_id: string
+        }
+        Insert: {
+          analysis_text: string
+          brightness_score?: number | null
+          created_at?: string
+          hydration_score?: number | null
+          id?: string
+          image_url: string
+          overall_quality_score?: number | null
+          sharpness_score?: number | null
+          skin_health_score?: number | null
+          texture_score?: number | null
+          user_id: string
+        }
+        Update: {
+          analysis_text?: string
+          brightness_score?: number | null
+          created_at?: string
+          hydration_score?: number | null
+          id?: string
+          image_url?: string
+          overall_quality_score?: number | null
+          sharpness_score?: number | null
+          skin_health_score?: number | null
+          texture_score?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

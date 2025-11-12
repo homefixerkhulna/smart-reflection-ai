@@ -1,12 +1,15 @@
 import { useState } from "react";
-import { Camera, Activity, TrendingUp, Image as ImageIcon } from "lucide-react";
+import { Camera, Activity, TrendingUp, Image as ImageIcon, Sparkles, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CameraCapture } from "@/components/CameraCapture";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 export const DermatologyModule = () => {
   const [showCamera, setShowCamera] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [analysis, setAnalysis] = useState<string | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const { toast } = useToast();
 
   // Mock data - foundation for AI integration
@@ -16,17 +19,50 @@ export const DermatologyModule = () => {
     { label: 'UV Protection', value: 92, trend: 'stable' },
   ];
 
-  const handleCapture = (image: string, blob: Blob) => {
+  const handleCapture = async (image: string, blob: Blob) => {
     setCapturedImage(image);
     setShowCamera(false);
+    setIsAnalyzing(true);
     
     toast({
       title: "Image captured successfully",
-      description: "Processing your skin analysis...",
+      description: "Analyzing your skin with AI...",
     });
 
-    // Here you would send the blob to your AI analysis service
-    console.log('Image captured:', { size: blob.size, type: blob.type });
+    try {
+      console.log('Sending image for analysis...');
+      const { data, error } = await supabase.functions.invoke('analyze-skin', {
+        body: { imageData: image }
+      });
+
+      if (error) {
+        console.error('Error analyzing image:', error);
+        toast({
+          title: "Analysis failed",
+          description: error.message || "Failed to analyze image. Please try again.",
+          variant: "destructive",
+        });
+        setIsAnalyzing(false);
+        return;
+      }
+
+      if (data?.analysis) {
+        setAnalysis(data.analysis);
+        toast({
+          title: "Analysis complete",
+          description: "Your skin analysis is ready!",
+        });
+      }
+    } catch (error) {
+      console.error('Error in analysis:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   return (
@@ -48,25 +84,52 @@ export const DermatologyModule = () => {
         </div>
 
         {capturedImage && (
-          <div className="rounded-lg overflow-hidden border border-border">
-            <img 
-              src={capturedImage} 
-              alt="Captured skin analysis" 
-              className="w-full h-48 object-cover"
-            />
-            <div className="p-3 bg-secondary/50 flex items-center justify-between">
-              <div className="flex items-center space-x-2 text-sm">
-                <ImageIcon className="w-4 h-4 text-primary" />
-                <span>Latest capture</span>
+          <div className="space-y-4">
+            <div className="rounded-lg overflow-hidden border border-border">
+              <img 
+                src={capturedImage} 
+                alt="Captured skin analysis" 
+                className="w-full h-48 object-cover"
+              />
+              <div className="p-3 bg-secondary/50 flex items-center justify-between">
+                <div className="flex items-center space-x-2 text-sm">
+                  <ImageIcon className="w-4 h-4 text-primary" />
+                  <span>Latest capture</span>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => {
+                    setShowCamera(true);
+                    setAnalysis(null);
+                  }}
+                  disabled={isAnalyzing}
+                >
+                  Retake
+                </Button>
               </div>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => setShowCamera(true)}
-              >
-                Retake
-              </Button>
             </div>
+
+            {isAnalyzing && (
+              <div className="flex items-center justify-center space-x-2 p-4 bg-secondary/30 rounded-lg">
+                <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                <span className="text-sm text-muted-foreground">Analyzing your skin...</span>
+              </div>
+            )}
+
+            {analysis && !isAnalyzing && (
+              <div className="space-y-3 p-4 bg-secondary/30 rounded-lg border border-border">
+                <div className="flex items-center space-x-2">
+                  <Sparkles className="w-5 h-5 text-primary" />
+                  <h4 className="font-medium">AI Skin Analysis</h4>
+                </div>
+                <div className="prose prose-sm max-w-none">
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
+                    {analysis}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         )}
       

@@ -1,0 +1,4 @@
+project_id = "hwlokusmhcuwzvwyhhlu"
+
+[functions.analyze-skin]
+verify_jwt = false

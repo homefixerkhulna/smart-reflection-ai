@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Camera, X, AlertCircle, CheckCircle, Lightbulb, Focus } from 'lucide-react';
+import { Camera, X, AlertCircle, CheckCircle, Lightbulb, Focus, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCamera } from '@/hooks/useCamera';
 import { cn } from '@/lib/utils';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface CameraCaptureProps {
   onCapture: (image: string, blob: Blob) => void;
@@ -71,6 +72,21 @@ export const CameraCapture = ({ onCapture, onClose }: CameraCaptureProps) => {
 
         {/* Camera Preview */}
         <div className="flex-1 relative overflow-hidden bg-black">
+          {/* Loading state while camera initializes */}
+          {!isActive && !error && (
+            <div className="absolute inset-0 flex items-center justify-center z-10 bg-black">
+              <div className="text-center space-y-4 p-6">
+                <Loader2 className="w-12 h-12 text-primary mx-auto animate-spin" />
+                <div className="space-y-2">
+                  <p className="text-foreground font-medium">Initializing camera...</p>
+                  <p className="text-sm text-muted-foreground">
+                    Please allow camera access when prompted
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {error && (
             <div className="absolute inset-0 flex items-center justify-center z-10 bg-black/80">
               <div className="text-center space-y-2 p-6">

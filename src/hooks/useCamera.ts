@@ -63,6 +63,7 @@ export const useCamera = () => {
       
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        await videoRef.current.play().catch((err) => console.error("Autoplay blocked:", err));
       }
 
       setState(prev => ({

@@ -23,7 +23,8 @@ export const CameraCapture = ({ onCapture, onClose }: CameraCaptureProps) => {
   useEffect(() => {
     startCamera();
     return () => stopCamera();
-  }, [startCamera, stopCamera]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleCapture = async () => {
     try {

@@ -134,16 +134,14 @@ export const DermatologyModule = () => {
             <h3 className="text-lg font-medium">Skin Analysis</h3>
           </div>
           <div className="flex gap-2">
-            {latestAnalysisId && (
-              <Button 
-                size="sm" 
-                variant="outline"
-                onClick={() => navigate(`/analysis/${latestAnalysisId}`)}
-              >
-                <History className="w-4 h-4 mr-2" />
-                View Results
-              </Button>
-            )}
+            <Button 
+              size="sm" 
+              variant="outline"
+              onClick={() => navigate('/history')}
+            >
+              <History className="w-4 h-4 mr-2" />
+              History
+            </Button>
             <Button 
               size="sm" 
               className="bg-primary hover:bg-primary/90"

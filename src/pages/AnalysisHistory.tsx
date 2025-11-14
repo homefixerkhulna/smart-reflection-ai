@@ -5,8 +5,19 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Calendar, Activity } from "lucide-react";
+import { ArrowLeft, Calendar, Activity, Trash2 } from "lucide-react";
 import { format } from "date-fns";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
 
 interface Analysis {
   id: string;
@@ -21,8 +32,10 @@ interface Analysis {
 export default function AnalysisHistory() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { toast } = useToast();
   const [analyses, setAnalyses] = useState<Analysis[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -44,6 +57,34 @@ export default function AnalysisHistory() {
       console.error('Error fetching analyses:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteId) return;
+
+    try {
+      const { error } = await supabase
+        .from('skin_analyses')
+        .delete()
+        .eq('id', deleteId);
+
+      if (error) throw error;
+
+      setAnalyses(analyses.filter(a => a.id !== deleteId));
+      toast({
+        title: "Analysis deleted",
+        description: "The analysis has been removed successfully.",
+      });
+    } catch (error) {
+      console.error('Error deleting analysis:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete the analysis. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setDeleteId(null);
     }
   };
 
@@ -92,10 +133,12 @@ export default function AnalysisHistory() {
             {analyses.map((analysis) => (
               <Card
                 key={analysis.id}
-                className="overflow-hidden cursor-pointer transition-all hover:shadow-lg hover:scale-105"
-                onClick={() => navigate(`/analysis/${analysis.id}`)}
+                className="overflow-hidden transition-all hover:shadow-lg"
               >
-                <div className="relative h-64 bg-muted">
+                <div 
+                  className="relative h-64 bg-muted cursor-pointer"
+                  onClick={() => navigate(`/analysis/${analysis.id}`)}
+                >
                   <img
                     src={analysis.image_url}
                     alt="Skin analysis"
@@ -103,9 +146,22 @@ export default function AnalysisHistory() {
                   />
                 </div>
                 <CardContent className="p-4">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
-                    <Calendar className="w-4 h-4" />
-                    {format(new Date(analysis.created_at), 'MMM dd, yyyy • HH:mm')}
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Calendar className="w-4 h-4" />
+                      {format(new Date(analysis.created_at), 'MMM dd, yyyy • HH:mm')}
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeleteId(analysis.id);
+                      }}
+                      className="h-8 w-8 text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
                   </div>
                   
                   <div className="space-y-2">
@@ -140,6 +196,23 @@ export default function AnalysisHistory() {
           </div>
         )}
       </div>
+
+      <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Analysis</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this analysis? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

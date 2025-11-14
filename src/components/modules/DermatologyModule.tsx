@@ -5,6 +5,7 @@ import { CameraCapture } from "@/components/CameraCapture";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 export const DermatologyModule = () => {
   const [showCamera, setShowCamera] = useState(false);
@@ -13,6 +14,7 @@ export const DermatologyModule = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   // Mock data - foundation for AI integration
   const metrics = [
@@ -61,7 +63,7 @@ export const DermatologyModule = () => {
         setAnalysis(data.analysis);
         
         // Save to database
-        const { error: dbError } = await supabase
+        const { data: savedAnalysis, error: dbError } = await supabase
           .from('skin_analyses')
           .insert({
             user_id: user.id,
@@ -70,7 +72,9 @@ export const DermatologyModule = () => {
             skin_health_score: 85,
             hydration_score: 78,
             texture_score: 82,
-          });
+          })
+          .select()
+          .single();
 
         if (dbError) {
           console.error('Error saving analysis:', dbError);
@@ -82,8 +86,10 @@ export const DermatologyModule = () => {
         } else {
           toast({
             title: "Analysis complete",
-            description: "Your skin analysis is ready and saved!",
+            description: "Opening results page...",
           });
+          // Navigate to results page
+          navigate(`/analysis/${savedAnalysis.id}`);
         }
       }
     } catch (error) {

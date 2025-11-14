@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Camera, Activity, TrendingUp, Image as ImageIcon, Sparkles, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Camera, Activity, TrendingUp, Image as ImageIcon, Sparkles, Loader2, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CameraCapture } from "@/components/CameraCapture";
 import { useToast } from "@/hooks/use-toast";
@@ -15,6 +15,27 @@ export const DermatologyModule = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [latestAnalysisId, setLatestAnalysisId] = useState<string | null>(null);
+
+  // Fetch latest analysis
+  useEffect(() => {
+    if (user) {
+      const fetchLatestAnalysis = async () => {
+        const { data } = await supabase
+          .from('skin_analyses')
+          .select('id')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+        
+        if (data) {
+          setLatestAnalysisId(data.id);
+        }
+      };
+      fetchLatestAnalysis();
+    }
+  }, [user]);
 
   // Mock data - foundation for AI integration
   const metrics = [
@@ -112,14 +133,26 @@ export const DermatologyModule = () => {
             <Activity className="w-5 h-5 text-primary" />
             <h3 className="text-lg font-medium">Skin Analysis</h3>
           </div>
-          <Button 
-            size="sm" 
-            className="bg-primary hover:bg-primary/90"
-            onClick={() => setShowCamera(true)}
-          >
-            <Camera className="w-4 h-4 mr-2" />
-            Capture
-          </Button>
+          <div className="flex gap-2">
+            {latestAnalysisId && (
+              <Button 
+                size="sm" 
+                variant="outline"
+                onClick={() => navigate(`/analysis/${latestAnalysisId}`)}
+              >
+                <History className="w-4 h-4 mr-2" />
+                View Results
+              </Button>
+            )}
+            <Button 
+              size="sm" 
+              className="bg-primary hover:bg-primary/90"
+              onClick={() => setShowCamera(true)}
+            >
+              <Camera className="w-4 h-4 mr-2" />
+              Capture
+            </Button>
+          </div>
         </div>
 
         {capturedImage && (

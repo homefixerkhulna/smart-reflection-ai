@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import SkinAnalysisResults from "./pages/SkinAnalysisResults";
 import AnalysisHistory from "./pages/AnalysisHistory";
+import AnalysisComparison from "./pages/AnalysisComparison";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -25,6 +26,7 @@ const App = () => (
             <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
             <Route path="/analysis/:id" element={<ProtectedRoute><SkinAnalysisResults /></ProtectedRoute>} />
             <Route path="/history" element={<ProtectedRoute><AnalysisHistory /></ProtectedRoute>} />
+            <Route path="/compare" element={<ProtectedRoute><AnalysisComparison /></ProtectedRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

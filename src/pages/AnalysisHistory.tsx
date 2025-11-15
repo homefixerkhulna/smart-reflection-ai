@@ -5,7 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Calendar, Activity, Trash2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { ArrowLeft, Calendar, Activity, Trash2, GitCompare } from "lucide-react";
 import { format } from "date-fns";
 import {
   AlertDialog,
@@ -36,6 +37,8 @@ export default function AnalysisHistory() {
   const [analyses, setAnalyses] = useState<Analysis[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [compareMode, setCompareMode] = useState(false);
+  const [selectedAnalyses, setSelectedAnalyses] = useState<string[]>([]);
 
   useEffect(() => {
     if (user) {
@@ -88,20 +91,73 @@ export default function AnalysisHistory() {
     }
   };
 
+  const toggleSelectAnalysis = (id: string) => {
+    setSelectedAnalyses(prev => {
+      if (prev.includes(id)) {
+        return prev.filter(analysisId => analysisId !== id);
+      }
+      if (prev.length >= 2) {
+        return [prev[1], id];
+      }
+      return [...prev, id];
+    });
+  };
+
+  const handleCompare = () => {
+    if (selectedAnalyses.length === 2) {
+      navigate(`/compare?id1=${selectedAnalyses[0]}&id2=${selectedAnalyses[1]}`);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
-        <div className="flex items-center gap-4 mb-8">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate('/')}
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Analysis History</h1>
-            <p className="text-muted-foreground mt-1">View all your past skin analyses</p>
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate('/')}
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">Analysis History</h1>
+              <p className="text-muted-foreground mt-1">
+                {compareMode ? 'Select two analyses to compare' : 'View all your past skin analyses'}
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            {compareMode && (
+              <>
+                <Button
+                  onClick={handleCompare}
+                  disabled={selectedAnalyses.length !== 2}
+                >
+                  <GitCompare className="w-4 h-4 mr-2" />
+                  Compare ({selectedAnalyses.length}/2)
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setCompareMode(false);
+                    setSelectedAnalyses([]);
+                  }}
+                >
+                  Cancel
+                </Button>
+              </>
+            )}
+            {!compareMode && analyses.length >= 2 && (
+              <Button
+                variant="outline"
+                onClick={() => setCompareMode(true)}
+              >
+                <GitCompare className="w-4 h-4 mr-2" />
+                Compare
+              </Button>
+            )}
           </div>
         </div>
 
@@ -130,38 +186,58 @@ export default function AnalysisHistory() {
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {analyses.map((analysis) => (
-              <Card
-                key={analysis.id}
-                className="overflow-hidden transition-all hover:shadow-lg"
-              >
-                <div 
-                  className="relative h-64 bg-muted cursor-pointer"
-                  onClick={() => navigate(`/analysis/${analysis.id}`)}
+            {analyses.map((analysis) => {
+              const isSelected = selectedAnalyses.includes(analysis.id);
+              return (
+                <Card
+                  key={analysis.id}
+                  className={`overflow-hidden transition-all hover:shadow-lg ${
+                    isSelected ? 'ring-2 ring-primary' : ''
+                  }`}
                 >
-                  <img
-                    src={analysis.image_url}
-                    alt="Skin analysis"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
+                  <div 
+                    className="relative h-64 bg-muted cursor-pointer"
+                    onClick={() => {
+                      if (compareMode) {
+                        toggleSelectAnalysis(analysis.id);
+                      } else {
+                        navigate(`/analysis/${analysis.id}`);
+                      }
+                    }}
+                  >
+                    <img
+                      src={analysis.image_url}
+                      alt="Skin analysis"
+                      className="w-full h-full object-cover"
+                    />
+                    {isSelected && (
+                      <Badge 
+                        className="absolute top-2 right-2"
+                        variant="default"
+                      >
+                        Selected
+                      </Badge>
+                    )}
+                  </div>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Calendar className="w-4 h-4" />
                       {format(new Date(analysis.created_at), 'MMM dd, yyyy • HH:mm')}
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setDeleteId(analysis.id);
-                      }}
-                      className="h-8 w-8 text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+                    {!compareMode && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeleteId(analysis.id);
+                        }}
+                        className="h-8 w-8 text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
                   </div>
                   
                   <div className="space-y-2">
@@ -192,7 +268,8 @@ export default function AnalysisHistory() {
                   </div>
                 </CardContent>
               </Card>
-            ))}
+            );
+            })}
           </div>
         )}
       </div>

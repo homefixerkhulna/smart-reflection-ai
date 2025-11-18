@@ -2,3 +2,10 @@ project_id = "hwlokusmhcuwzvwyhhlu"
 
 [functions.analyze-skin]
 verify_jwt = false
+
+[functions.get-recommendations]
+verify_jwt = true
+
+[functions.skin-chat]
+verify_jwt = true
+

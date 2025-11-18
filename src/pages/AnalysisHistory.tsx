@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Calendar, Activity, Trash2, GitCompare } from "lucide-react";
+import { ArrowLeft, Calendar, Activity, Trash2, GitCompare, TrendingUp } from "lucide-react";
 import { format } from "date-fns";
 import {
   AlertDialog,
@@ -129,6 +129,13 @@ export default function AnalysisHistory() {
             </div>
           </div>
           <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => navigate('/trends')}
+            >
+              <TrendingUp className="w-4 h-4 mr-2" />
+              View Trends
+            </Button>
             {compareMode && (
               <>
                 <Button

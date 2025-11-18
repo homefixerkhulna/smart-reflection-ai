@@ -131,6 +131,13 @@ export default function AnalysisHistory() {
           <div className="flex gap-2">
             <Button
               variant="outline"
+              onClick={() => navigate('/recommendations')}
+            >
+              <Activity className="w-4 h-4 mr-2" />
+              Get Recommendations
+            </Button>
+            <Button
+              variant="outline"
               onClick={() => navigate('/trends')}
             >
               <TrendingUp className="w-4 h-4 mr-2" />

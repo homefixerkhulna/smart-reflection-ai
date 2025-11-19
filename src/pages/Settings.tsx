@@ -1,4 +1,4 @@
-import { ArrowLeft, User, Monitor, Camera, Shield } from "lucide-react";
+import { ArrowLeft, User, Monitor, Camera, Shield, Sun, Moon, Laptop } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,11 +11,14 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useTheme } from "next-themes";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 const Settings = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { toast } = useToast();
+  const { theme, setTheme } = useTheme();
   
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -160,6 +163,45 @@ const Settings = () => {
           <TabsContent value="display">
             <Card className="glass p-6 space-y-6">
               <div>
+                <h2 className="text-xl font-semibold mb-4">Theme</h2>
+                <div className="space-y-4">
+                  <Label>Appearance</Label>
+                  <RadioGroup value={theme} onValueChange={setTheme} className="gap-4">
+                    <div className="flex items-center space-x-3 rounded-lg border border-border p-4 hover:bg-accent/50 cursor-pointer transition-colors">
+                      <RadioGroupItem value="light" id="light" />
+                      <Label htmlFor="light" className="flex items-center gap-2 cursor-pointer flex-1">
+                        <Sun className="w-5 h-5 text-muted-foreground" />
+                        <div>
+                          <div className="font-medium">Light</div>
+                          <div className="text-xs text-muted-foreground">Clean and bright interface</div>
+                        </div>
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-3 rounded-lg border border-border p-4 hover:bg-accent/50 cursor-pointer transition-colors">
+                      <RadioGroupItem value="dark" id="dark" />
+                      <Label htmlFor="dark" className="flex items-center gap-2 cursor-pointer flex-1">
+                        <Moon className="w-5 h-5 text-muted-foreground" />
+                        <div>
+                          <div className="font-medium">Dark</div>
+                          <div className="text-xs text-muted-foreground">Comfortable for your eyes</div>
+                        </div>
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-3 rounded-lg border border-border p-4 hover:bg-accent/50 cursor-pointer transition-colors">
+                      <RadioGroupItem value="system" id="system" />
+                      <Label htmlFor="system" className="flex items-center gap-2 cursor-pointer flex-1">
+                        <Laptop className="w-5 h-5 text-muted-foreground" />
+                        <div>
+                          <div className="font-medium">System</div>
+                          <div className="text-xs text-muted-foreground">Follows your device settings</div>
+                        </div>
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+              </div>
+
+              <div className="border-t pt-6">
                 <h2 className="text-xl font-semibold mb-4">Module Visibility</h2>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">

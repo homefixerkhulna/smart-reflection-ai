@@ -1,5 +1,6 @@
 import { Settings, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 import { Clock } from "@/components/modules/Clock";
 import { Weather } from "@/components/modules/Weather";
 import { Calendar } from "@/components/modules/Calendar";
@@ -10,12 +11,18 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const Index = () => {
   const { signOut } = useAuth();
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-background p-8">
       {/* Header */}
       <header className="absolute top-8 right-8 z-10 flex gap-2">
-        <Button variant="ghost" size="icon" className="glass rounded-full">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="glass rounded-full"
+          onClick={() => navigate("/settings")}
+        >
           <Settings className="w-5 h-5" />
         </Button>
         <Button 

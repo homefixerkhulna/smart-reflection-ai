@@ -12,6 +12,7 @@ import AnalysisHistory from "./pages/AnalysisHistory";
 import AnalysisComparison from "./pages/AnalysisComparison";
 import AnalysisTrends from "./pages/AnalysisTrends";
 import Recommendations from "./pages/Recommendations";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -31,6 +32,7 @@ const App = () => (
             <Route path="/trends" element={<ProtectedRoute><AnalysisTrends /></ProtectedRoute>} />
             <Route path="/recommendations" element={<ProtectedRoute><Recommendations /></ProtectedRoute>} />
             <Route path="/compare" element={<ProtectedRoute><AnalysisComparison /></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

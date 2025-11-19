@@ -1,22 +1,48 @@
 import { Newspaper } from "lucide-react";
 import { useEffect, useState } from "react";
 
-export const News = () => {
-  // Mock data - in production, this would fetch from RSS feeds
-  const newsItems = [
-    "New study reveals benefits of daily sun protection",
-    "Breakthrough in personalized skincare technology",
-    "AI-powered dermatology shows 95% accuracy rate",
-  ];
+interface Article {
+  title: string;
+}
 
+export const News = () => {
+  const [newsItems, setNewsItems] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % newsItems.length);
-    }, 5000);
-    return () => clearInterval(interval);
+    const fetchNews = async () => {
+      try {
+        const response = await fetch('https://newsdata.io/api/1/news?apikey=pub_de74b49bafb24c0881863626c23948f0&country=bd');
+        if (!response.ok) {
+          throw new Error('Failed to fetch news');
+        }
+        const data = await response.json();
+        const articles: Article[] = data.results || [];
+        setNewsItems(articles.map(article => article.title));
+        setLoading(false);
+      } catch (err) {
+        if (err instanceof Error) {
+            setError(err.message);
+        } else {
+            setError('An unknown error occurred');
+        }
+        setLoading(false);
+      }
+    };
+
+    fetchNews();
   }, []);
+
+  useEffect(() => {
+    if (newsItems.length > 0) {
+      const interval = setInterval(() => {
+        setCurrentIndex((prev) => (prev + 1) % newsItems.length);
+      }, 5000);
+      return () => clearInterval(interval);
+    }
+  }, [newsItems]);
 
   return (
     <div className="glass rounded-2xl p-6">
@@ -25,9 +51,17 @@ export const News = () => {
         <h3 className="text-lg font-medium">Latest News</h3>
       </div>
       <div className="text-sm text-muted-foreground leading-relaxed h-12 flex items-center">
-        <p className="animate-in fade-in duration-500" key={currentIndex}>
-          {newsItems[currentIndex]}
-        </p>
+        {loading ? (
+          <p>Loading news...</p>
+        ) : error ? (
+          <p className="text-red-500">{error}</p>
+        ) : newsItems.length > 0 ? (
+          <p className="animate-in fade-in duration-500" key={currentIndex}>
+            {newsItems[currentIndex]}
+          </p>
+        ) : (
+          <p>No news available.</p>
+        )}
       </div>
     </div>
   );

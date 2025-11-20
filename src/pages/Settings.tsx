@@ -24,6 +24,16 @@ const Settings = () => {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   
+  // Personal information fields
+  const [dateOfBirth, setDateOfBirth] = useState("");
+  const [gender, setGender] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [heightFeet, setHeightFeet] = useState("");
+  const [heightInches, setHeightInches] = useState("");
+  const [heightCm, setHeightCm] = useState("");
+  const [weightKg, setWeightKg] = useState("");
+  const [bloodGroup, setBloodGroup] = useState("");
+  
   const [showClock, setShowClock] = useState(true);
   const [showWeather, setShowWeather] = useState(true);
   const [showCalendar, setShowCalendar] = useState(true);
@@ -43,14 +53,29 @@ const Settings = () => {
     
     const { data, error } = await supabase
       .from("profiles")
-      .select("full_name")
+      .select("full_name, date_of_birth, gender, phone_number, height_feet, height_inches, weight_kg, blood_group")
       .eq("id", user.id)
       .single();
     
     if (data) {
       setFullName(data.full_name || "");
+      setDateOfBirth(data.date_of_birth || "");
+      setGender(data.gender || "");
+      setPhoneNumber(data.phone_number || "");
+      setHeightFeet(data.height_feet?.toString() || "");
+      setHeightInches(data.height_inches?.toString() || "");
+      setWeightKg(data.weight_kg?.toString() || "");
+      setBloodGroup(data.blood_group || "");
     }
   };
+  
+  // Auto-calculate height in cm when feet/inches change
+  useEffect(() => {
+    const feet = parseInt(heightFeet) || 0;
+    const inches = parseInt(heightInches) || 0;
+    const cm = (feet * 30.48) + (inches * 2.54);
+    setHeightCm(cm > 0 ? cm.toFixed(1) : "");
+  }, [heightFeet, heightInches]);
 
   const handleSaveProfile = async () => {
     if (!user) return;
@@ -58,7 +83,16 @@ const Settings = () => {
     setLoading(true);
     const { error } = await supabase
       .from("profiles")
-      .update({ full_name: fullName })
+      .update({ 
+        full_name: fullName,
+        date_of_birth: dateOfBirth || null,
+        gender: gender || null,
+        phone_number: phoneNumber || null,
+        height_feet: heightFeet ? parseInt(heightFeet) : null,
+        height_inches: heightInches ? parseInt(heightInches) : null,
+        weight_kg: weightKg ? parseFloat(weightKg) : null,
+        blood_group: bloodGroup || null,
+      })
       .eq("id", user.id);
     
     setLoading(false);
@@ -127,7 +161,7 @@ const Settings = () => {
           <TabsContent value="profile">
             <Card className="glass p-6 space-y-6">
               <div>
-                <h2 className="text-xl font-semibold mb-4">Profile Information</h2>
+                <h2 className="text-xl font-semibold mb-4">Basic Information</h2>
                 <div className="space-y-4">
                   <div>
                     <Label htmlFor="fullName">Full Name</Label>
@@ -151,11 +185,114 @@ const Settings = () => {
                       Email cannot be changed
                     </p>
                   </div>
-                  <Button onClick={handleSaveProfile} disabled={loading}>
-                    {loading ? "Saving..." : "Save Changes"}
-                  </Button>
+                  <div>
+                    <Label htmlFor="dateOfBirth">Date of Birth</Label>
+                    <Input
+                      id="dateOfBirth"
+                      type="date"
+                      value={dateOfBirth}
+                      onChange={(e) => setDateOfBirth(e.target.value)}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="gender">Gender</Label>
+                    <Select value={gender} onValueChange={setGender}>
+                      <SelectTrigger id="gender" className="mt-1">
+                        <SelectValue placeholder="Select gender" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="male">Male</SelectItem>
+                        <SelectItem value="female">Female</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                        <SelectItem value="prefer_not_to_say">Prefer not to say</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="phoneNumber">Phone Number</Label>
+                    <Input
+                      id="phoneNumber"
+                      type="tel"
+                      value={phoneNumber}
+                      onChange={(e) => setPhoneNumber(e.target.value)}
+                      placeholder="+1 (555) 000-0000"
+                      className="mt-1"
+                    />
+                  </div>
                 </div>
               </div>
+
+              <div className="border-t pt-6">
+                <h2 className="text-xl font-semibold mb-4">Physical Information</h2>
+                <div className="space-y-4">
+                  <div>
+                    <Label>Height</Label>
+                    <div className="grid grid-cols-2 gap-3 mt-1">
+                      <div>
+                        <Input
+                          type="number"
+                          value={heightFeet}
+                          onChange={(e) => setHeightFeet(e.target.value)}
+                          placeholder="Feet"
+                          min="0"
+                          max="8"
+                        />
+                      </div>
+                      <div>
+                        <Input
+                          type="number"
+                          value={heightInches}
+                          onChange={(e) => setHeightInches(e.target.value)}
+                          placeholder="Inches"
+                          min="0"
+                          max="11"
+                        />
+                      </div>
+                    </div>
+                    {heightCm && (
+                      <p className="text-xs text-muted-foreground mt-2">
+                        ≈ {heightCm} cm
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <Label htmlFor="weightKg">Weight (kg)</Label>
+                    <Input
+                      id="weightKg"
+                      type="number"
+                      value={weightKg}
+                      onChange={(e) => setWeightKg(e.target.value)}
+                      placeholder="Enter weight in kilograms"
+                      min="0"
+                      step="0.1"
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="bloodGroup">Blood Group</Label>
+                    <Select value={bloodGroup} onValueChange={setBloodGroup}>
+                      <SelectTrigger id="bloodGroup" className="mt-1">
+                        <SelectValue placeholder="Select blood group" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="A+">A+</SelectItem>
+                        <SelectItem value="A-">A-</SelectItem>
+                        <SelectItem value="B+">B+</SelectItem>
+                        <SelectItem value="B-">B-</SelectItem>
+                        <SelectItem value="AB+">AB+</SelectItem>
+                        <SelectItem value="AB-">AB-</SelectItem>
+                        <SelectItem value="O+">O+</SelectItem>
+                        <SelectItem value="O-">O-</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+
+              <Button onClick={handleSaveProfile} disabled={loading} className="w-full">
+                {loading ? "Saving..." : "Save Changes"}
+              </Button>
             </Card>
           </TabsContent>
 

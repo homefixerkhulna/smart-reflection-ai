@@ -280,6 +280,22 @@ export default function AnalysisHistory() {
                       </div>
                     )}
                   </div>
+                  {analysis.analysis_text && (
+                    <div className="mt-4">
+                      <Button
+                        variant="link"
+                        className="p-0 h-auto"
+                        onClick={() => setExpandedId(expandedId === analysis.id ? null : analysis.id)}
+                      >
+                        {expandedId === analysis.id ? 'Hide' : 'Show'} Details
+                      </Button>
+                      {expandedId === analysis.id && (
+                        <p className="text-sm text-muted-foreground mt-2 whitespace-pre-wrap">
+                          {analysis.analysis_text}
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             );

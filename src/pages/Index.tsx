@@ -7,6 +7,7 @@ import { Calendar } from "@/components/modules/Calendar";
 import { News } from "@/components/modules/News";
 import { Compliments } from "@/components/modules/Compliments";
 import { DermatologyModule } from "@/components/modules/DermatologyModule";
+import { VoiceAssistant } from "@/components/VoiceAssistant";
 import { useAuth } from "@/contexts/AuthContext";
 
 const Index = () => {
@@ -74,6 +75,9 @@ const Index = () => {
           </div>
         </div>
       </div>
+
+      {/* Voice Assistant */}
+      <VoiceAssistant />
     </div>
   );
 };

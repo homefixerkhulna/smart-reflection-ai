@@ -9,3 +9,5 @@ verify_jwt = true
 [functions.skin-chat]
 verify_jwt = true
 
+[functions.voice-assistant]
+verify_jwt = true

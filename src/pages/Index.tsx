@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Settings, LogOut } from "lucide-react";
+import { Settings, LogOut, ListTodo } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Clock } from "@/components/modules/Clock";
@@ -67,6 +67,15 @@ const Index = () => {
     <div className="min-h-screen bg-background p-8">
       {/* Header */}
       <header className="absolute top-8 right-8 z-10 flex gap-2">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="glass rounded-full"
+          onClick={() => navigate("/tasks")}
+          title="Tasks"
+        >
+          <ListTodo className="w-5 h-5" />
+        </Button>
         <Button 
           variant="ghost" 
           size="icon" 

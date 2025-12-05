@@ -28,6 +28,39 @@ const Index = () => {
       if (data) setAnalyses(data);
     };
     fetchAnalyses();
+
+    // Real-time subscription for new analyses
+    const channel = supabase
+      .channel('skin-analyses-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'skin_analyses',
+          filter: `user_id=eq.${user?.id}`,
+        },
+        (payload) => {
+          setAnalyses((prev) => [payload.new as any, ...prev]);
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'skin_analyses',
+          filter: `user_id=eq.${user?.id}`,
+        },
+        (payload) => {
+          setAnalyses((prev) => prev.filter((a) => a.id !== payload.old.id));
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user]);
 
   return (

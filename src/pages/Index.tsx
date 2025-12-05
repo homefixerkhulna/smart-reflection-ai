@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Settings, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -7,12 +8,27 @@ import { Calendar } from "@/components/modules/Calendar";
 import { News } from "@/components/modules/News";
 import { Compliments } from "@/components/modules/Compliments";
 import { DermatologyModule } from "@/components/modules/DermatologyModule";
-import { VoiceAssistant } from "@/components/VoiceAssistant";
+import { DermatologyChat } from "@/components/DermatologyChat";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
   const navigate = useNavigate();
+  const [analyses, setAnalyses] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchAnalyses = async () => {
+      if (!user) return;
+      const { data } = await supabase
+        .from('skin_analyses')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      if (data) setAnalyses(data);
+    };
+    fetchAnalyses();
+  }, [user]);
 
   return (
     <div className="min-h-screen bg-background p-8">
@@ -76,8 +92,8 @@ const Index = () => {
         </div>
       </div>
 
-      {/* Voice Assistant */}
-      <VoiceAssistant />
+      {/* Dermatology Chat Assistant */}
+      <DermatologyChat analyses={analyses} />
     </div>
   );
 };

@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
+import { addDays, addWeeks, addMonths, format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import type { Task, CreateTaskInput, UpdateTaskInput } from '../types';
+import type { Task, CreateTaskInput, UpdateTaskInput, RecurrenceType } from '../types';
 
 export function useTasks() {
   const { user } = useAuth();
@@ -109,8 +110,53 @@ export function useTasks() {
     return true;
   };
 
+  const getNextDueDate = (currentDate: string, recurrenceType: RecurrenceType): string => {
+    const date = new Date(currentDate);
+    switch (recurrenceType) {
+      case 'daily':
+        return format(addDays(date, 1), 'yyyy-MM-dd');
+      case 'weekly':
+        return format(addWeeks(date, 1), 'yyyy-MM-dd');
+      case 'monthly':
+        return format(addMonths(date, 1), 'yyyy-MM-dd');
+      default:
+        return currentDate;
+    }
+  };
+
   const markComplete = async (id: string) => {
-    return updateTask(id, { status: 'completed', completed_at: new Date().toISOString() });
+    const task = tasks.find((t) => t.id === id);
+    if (!task) return null;
+
+    // Mark current task as completed
+    const result = await updateTask(id, { status: 'completed', completed_at: new Date().toISOString() });
+
+    // If recurring, create next occurrence
+    if (task.recurrence_type !== 'none' && user) {
+      const nextDueDate = getNextDueDate(task.due_date, task.recurrence_type);
+      
+      // Check if next occurrence is within the recurrence end date
+      const shouldCreateNext = !task.recurrence_end_date || nextDueDate <= task.recurrence_end_date;
+      
+      if (shouldCreateNext) {
+        await supabase.from('tasks').insert({
+          user_id: user.id,
+          title: task.title,
+          description: task.description,
+          due_date: nextDueDate,
+          due_time: task.due_time,
+          priority: task.priority,
+          category: task.category,
+          reminder_enabled: task.reminder_enabled,
+          reminder_minutes_before: task.reminder_minutes_before,
+          recurrence_type: task.recurrence_type,
+          recurrence_end_date: task.recurrence_end_date,
+          status: 'pending',
+        });
+      }
+    }
+
+    return result;
   };
 
   const markPending = async (id: string) => {

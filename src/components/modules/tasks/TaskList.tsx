@@ -9,7 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Clock, MoreVertical, Pencil, Trash2, Bell, BellOff } from 'lucide-react';
+import { Clock, MoreVertical, Pencil, Trash2, Bell, BellOff, Repeat } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Task } from './types';
 import { PRIORITY_COLORS } from './types';
@@ -110,6 +110,13 @@ export function TaskList({
                 {task.status === 'overdue' && (
                   <Badge variant="destructive" className="text-xs">
                     Overdue
+                  </Badge>
+                )}
+
+                {task.recurrence_type && task.recurrence_type !== 'none' && (
+                  <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/30">
+                    <Repeat className="h-3 w-3 mr-1" />
+                    {task.recurrence_type}
                   </Badge>
                 )}
 

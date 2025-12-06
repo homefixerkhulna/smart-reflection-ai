@@ -9,6 +9,8 @@ import { News } from "@/components/modules/News";
 import { Compliments } from "@/components/modules/Compliments";
 import { DermatologyModule } from "@/components/modules/DermatologyModule";
 import { DermatologyChat } from "@/components/DermatologyChat";
+import { TodaySchedule } from "@/components/modules/tasks/TodaySchedule";
+import { useTasks } from "@/components/modules/tasks/hooks/useTasks";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -16,6 +18,7 @@ const Index = () => {
   const { signOut, user } = useAuth();
   const navigate = useNavigate();
   const [analyses, setAnalyses] = useState<any[]>([]);
+  const { todayTasks, markComplete, markPending } = useTasks();
 
   useEffect(() => {
     const fetchAnalyses = async () => {
@@ -113,24 +116,12 @@ const Index = () => {
         <div className="space-y-8 pt-32">
           <News />
           
-          {/* Quick Stats */}
-          <div className="glass rounded-2xl p-6 space-y-3">
-            <h3 className="text-sm font-medium text-muted-foreground mb-4">System Status</h3>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Camera</span>
-                <span className="text-primary">Active</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">AI Module</span>
-                <span className="text-primary">Ready</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Network</span>
-                <span className="text-primary">Connected</span>
-              </div>
-            </div>
-          </div>
+          {/* Today's Schedule */}
+          <TodaySchedule 
+            tasks={todayTasks} 
+            onMarkComplete={markComplete} 
+            onMarkPending={markPending} 
+          />
         </div>
       </div>
 

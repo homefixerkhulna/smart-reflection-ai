@@ -117,6 +117,8 @@ export type Database = {
           due_time: string | null
           id: string
           priority: string
+          recurrence_end_date: string | null
+          recurrence_type: string | null
           reminder_enabled: boolean | null
           reminder_minutes_before: number | null
           status: string
@@ -133,6 +135,8 @@ export type Database = {
           due_time?: string | null
           id?: string
           priority?: string
+          recurrence_end_date?: string | null
+          recurrence_type?: string | null
           reminder_enabled?: boolean | null
           reminder_minutes_before?: number | null
           status?: string
@@ -149,6 +153,8 @@ export type Database = {
           due_time?: string | null
           id?: string
           priority?: string
+          recurrence_end_date?: string | null
+          recurrence_type?: string | null
           reminder_enabled?: boolean | null
           reminder_minutes_before?: number | null
           status?: string

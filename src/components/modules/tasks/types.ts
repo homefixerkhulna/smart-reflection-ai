@@ -1,5 +1,6 @@
 export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
 export type TaskStatus = 'pending' | 'completed' | 'overdue';
+export type RecurrenceType = 'none' | 'daily' | 'weekly' | 'monthly';
 
 export interface Task {
   id: string;
@@ -13,6 +14,8 @@ export interface Task {
   status: TaskStatus;
   reminder_enabled: boolean;
   reminder_minutes_before: number;
+  recurrence_type: RecurrenceType;
+  recurrence_end_date?: string | null;
   completed_at?: string | null;
   created_at: string;
   updated_at: string;
@@ -27,6 +30,8 @@ export interface CreateTaskInput {
   category: string;
   reminder_enabled: boolean;
   reminder_minutes_before: number;
+  recurrence_type?: RecurrenceType;
+  recurrence_end_date?: string;
 }
 
 export interface UpdateTaskInput extends Partial<CreateTaskInput> {

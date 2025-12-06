@@ -20,9 +20,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { CalendarIcon, Loader2 } from 'lucide-react';
+import { CalendarIcon, Loader2, Repeat } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { Task, CreateTaskInput, TaskPriority, CATEGORIES } from './types';
+import type { Task, CreateTaskInput, TaskPriority, RecurrenceType, CATEGORIES } from './types';
 
 interface CreateTaskModalProps {
   isOpen: boolean;
@@ -59,6 +59,8 @@ export function CreateTaskModal({
   const [category, setCategory] = useState('general');
   const [reminderEnabled, setReminderEnabled] = useState(true);
   const [reminderMinutes, setReminderMinutes] = useState(5);
+  const [recurrenceType, setRecurrenceType] = useState<RecurrenceType>('none');
+  const [recurrenceEndDate, setRecurrenceEndDate] = useState<Date | undefined>(undefined);
 
   useEffect(() => {
     if (editTask) {
@@ -70,6 +72,8 @@ export function CreateTaskModal({
       setCategory(editTask.category);
       setReminderEnabled(editTask.reminder_enabled);
       setReminderMinutes(editTask.reminder_minutes_before);
+      setRecurrenceType(editTask.recurrence_type || 'none');
+      setRecurrenceEndDate(editTask.recurrence_end_date ? new Date(editTask.recurrence_end_date) : undefined);
     } else {
       resetForm();
     }
@@ -84,6 +88,8 @@ export function CreateTaskModal({
     setCategory('general');
     setReminderEnabled(true);
     setReminderMinutes(5);
+    setRecurrenceType('none');
+    setRecurrenceEndDate(undefined);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -101,6 +107,8 @@ export function CreateTaskModal({
       category,
       reminder_enabled: reminderEnabled,
       reminder_minutes_before: reminderMinutes,
+      recurrence_type: recurrenceType,
+      recurrence_end_date: recurrenceEndDate ? format(recurrenceEndDate, 'yyyy-MM-dd') : undefined,
     };
 
     let result;
@@ -250,6 +258,68 @@ export function CreateTaskModal({
                   <SelectItem value="60">1 hour before</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+          )}
+
+          <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+            <div className="flex items-center gap-2">
+              <Repeat className="h-4 w-4 text-muted-foreground" />
+              <div className="space-y-0.5">
+                <Label>Repeat Task</Label>
+                <p className="text-xs text-muted-foreground">Create recurring tasks</p>
+              </div>
+            </div>
+            <Select value={recurrenceType} onValueChange={(v) => setRecurrenceType(v as RecurrenceType)}>
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None</SelectItem>
+                <SelectItem value="daily">Daily</SelectItem>
+                <SelectItem value="weekly">Weekly</SelectItem>
+                <SelectItem value="monthly">Monthly</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {recurrenceType !== 'none' && (
+            <div className="space-y-2">
+              <Label>Repeat Until (Optional)</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      'w-full justify-start text-left font-normal',
+                      !recurrenceEndDate && 'text-muted-foreground'
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {recurrenceEndDate ? format(recurrenceEndDate, 'PPP') : <span>No end date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={recurrenceEndDate}
+                    onSelect={setRecurrenceEndDate}
+                    disabled={(date) => date < (dueDate || new Date())}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+              {recurrenceEndDate && (
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setRecurrenceEndDate(undefined)}
+                  className="text-xs text-muted-foreground"
+                >
+                  Clear end date
+                </Button>
+              )}
             </div>
           )}
 

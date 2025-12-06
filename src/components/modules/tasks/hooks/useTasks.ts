@@ -169,6 +169,27 @@ export function useTasks() {
     return t.due_date === today;
   });
 
+  const weeklyTasks = tasks.filter((t) => {
+    const today = new Date();
+    const taskDate = new Date(t.due_date);
+    const weekEnd = addDays(today, 7);
+    return taskDate >= today && taskDate <= weekEnd;
+  });
+
+  const monthlyTasks = tasks.filter((t) => {
+    const today = new Date();
+    const taskDate = new Date(t.due_date);
+    const monthEnd = addMonths(today, 1);
+    return taskDate >= today && taskDate <= monthEnd;
+  });
+
+  const yearlyTasks = tasks.filter((t) => {
+    const today = new Date();
+    const taskDate = new Date(t.due_date);
+    const yearEnd = new Date(today.getFullYear(), 11, 31);
+    return taskDate >= today && taskDate <= yearEnd;
+  });
+
   const pendingTasks = tasks.filter((t) => t.status === 'pending');
   const completedTasks = tasks.filter((t) => t.status === 'completed');
   const overdueTasks = tasks.filter((t) => t.status === 'overdue');
@@ -176,6 +197,9 @@ export function useTasks() {
   return {
     tasks,
     todayTasks,
+    weeklyTasks,
+    monthlyTasks,
+    yearlyTasks,
     pendingTasks,
     completedTasks,
     overdueTasks,

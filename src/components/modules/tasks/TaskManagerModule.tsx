@@ -16,6 +16,9 @@ export function TaskManagerModule() {
   const {
     tasks,
     todayTasks,
+    weeklyTasks,
+    monthlyTasks,
+    yearlyTasks,
     pendingTasks,
     completedTasks,
     overdueTasks,
@@ -122,24 +125,16 @@ export function TaskManagerModule() {
       {/* Main Content */}
       <div className="grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <Tabs defaultValue="all" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="all">All</TabsTrigger>
+          <Tabs defaultValue="pending" className="space-y-4">
+            <TabsList className="grid w-full grid-cols-7">
               <TabsTrigger value="pending">Pending</TabsTrigger>
+              <TabsTrigger value="today">Today</TabsTrigger>
+              <TabsTrigger value="weekly">Weekly</TabsTrigger>
+              <TabsTrigger value="monthly">Monthly</TabsTrigger>
+              <TabsTrigger value="yearly">Yearly</TabsTrigger>
               <TabsTrigger value="completed">Done</TabsTrigger>
               <TabsTrigger value="overdue">Overdue</TabsTrigger>
             </TabsList>
-
-            <TabsContent value="all">
-              <TaskList
-                tasks={tasks}
-                onMarkComplete={markComplete}
-                onMarkPending={markPending}
-                onEdit={handleEdit}
-                onDelete={deleteTask}
-                emptyMessage="No tasks yet. Create your first task!"
-              />
-            </TabsContent>
 
             <TabsContent value="pending">
               <TaskList
@@ -149,6 +144,50 @@ export function TaskManagerModule() {
                 onEdit={handleEdit}
                 onDelete={deleteTask}
                 emptyMessage="No pending tasks"
+              />
+            </TabsContent>
+
+            <TabsContent value="today">
+              <TaskList
+                tasks={todayTasks}
+                onMarkComplete={markComplete}
+                onMarkPending={markPending}
+                onEdit={handleEdit}
+                onDelete={deleteTask}
+                emptyMessage="No tasks for today"
+              />
+            </TabsContent>
+
+            <TabsContent value="weekly">
+              <TaskList
+                tasks={weeklyTasks}
+                onMarkComplete={markComplete}
+                onMarkPending={markPending}
+                onEdit={handleEdit}
+                onDelete={deleteTask}
+                emptyMessage="No tasks for this week"
+              />
+            </TabsContent>
+
+            <TabsContent value="monthly">
+              <TaskList
+                tasks={monthlyTasks}
+                onMarkComplete={markComplete}
+                onMarkPending={markPending}
+                onEdit={handleEdit}
+                onDelete={deleteTask}
+                emptyMessage="No tasks for this month"
+              />
+            </TabsContent>
+
+            <TabsContent value="yearly">
+              <TaskList
+                tasks={yearlyTasks}
+                onMarkComplete={markComplete}
+                onMarkPending={markPending}
+                onEdit={handleEdit}
+                onDelete={deleteTask}
+                emptyMessage="No tasks for this year"
               />
             </TabsContent>
 

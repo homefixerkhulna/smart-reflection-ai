@@ -69,40 +69,55 @@ export type Database = {
         Row: {
           analysis_text: string
           brightness_score: number | null
+          condition_probabilities: Json | null
+          confidence_score: number | null
           created_at: string
           hydration_score: number | null
           id: string
           image_url: string
+          isic_reference_ids: string[] | null
           overall_quality_score: number | null
+          risk_level: string | null
           sharpness_score: number | null
           skin_health_score: number | null
           texture_score: number | null
+          triage_suggestion: string | null
           user_id: string
         }
         Insert: {
           analysis_text: string
           brightness_score?: number | null
+          condition_probabilities?: Json | null
+          confidence_score?: number | null
           created_at?: string
           hydration_score?: number | null
           id?: string
           image_url: string
+          isic_reference_ids?: string[] | null
           overall_quality_score?: number | null
+          risk_level?: string | null
           sharpness_score?: number | null
           skin_health_score?: number | null
           texture_score?: number | null
+          triage_suggestion?: string | null
           user_id: string
         }
         Update: {
           analysis_text?: string
           brightness_score?: number | null
+          condition_probabilities?: Json | null
+          confidence_score?: number | null
           created_at?: string
           hydration_score?: number | null
           id?: string
           image_url?: string
+          isic_reference_ids?: string[] | null
           overall_quality_score?: number | null
+          risk_level?: string | null
           sharpness_score?: number | null
           skin_health_score?: number | null
           texture_score?: number | null
+          triage_suggestion?: string | null
           user_id?: string
         }
         Relationships: []

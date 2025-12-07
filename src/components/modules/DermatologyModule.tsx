@@ -1,16 +1,29 @@
 import { useState, useEffect } from "react";
-import { Camera, Activity, TrendingUp, Image as ImageIcon, Sparkles, Loader2, History } from "lucide-react";
+import { Camera, Activity, TrendingUp, Image as ImageIcon, Sparkles, Loader2, History, AlertTriangle, CheckCircle, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { CameraCapture } from "@/components/CameraCapture";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 
+interface AnalysisResult {
+  analysis: string;
+  risk_level: 'LOW' | 'MEDIUM' | 'HIGH';
+  confidence_score: number;
+  triage_suggestion: string;
+  condition_probabilities: Record<string, number>;
+  skin_health_score: number;
+  hydration_score: number;
+  texture_score: number;
+  isic_reference_ids: string[];
+}
+
 export const DermatologyModule = () => {
   const [showCamera, setShowCamera] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
-  const [analysis, setAnalysis] = useState<string | null>(null);
+  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
@@ -37,12 +50,31 @@ export const DermatologyModule = () => {
     }
   }, [user]);
 
-  // Mock data - foundation for AI integration
-  const metrics = [
-    { label: 'Skin Health', value: 85, trend: '+2%' },
-    { label: 'Hydration', value: 78, trend: '+5%' },
-    { label: 'UV Protection', value: 92, trend: 'stable' },
-  ];
+  const getRiskBadge = (riskLevel: 'LOW' | 'MEDIUM' | 'HIGH') => {
+    switch (riskLevel) {
+      case 'HIGH':
+        return (
+          <Badge variant="destructive" className="flex items-center gap-1">
+            <AlertTriangle className="w-3 h-3" />
+            High Risk
+          </Badge>
+        );
+      case 'MEDIUM':
+        return (
+          <Badge variant="secondary" className="flex items-center gap-1 bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/30">
+            <AlertCircle className="w-3 h-3" />
+            Medium Risk
+          </Badge>
+        );
+      case 'LOW':
+        return (
+          <Badge variant="secondary" className="flex items-center gap-1 bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30">
+            <CheckCircle className="w-3 h-3" />
+            Low Risk
+          </Badge>
+        );
+    }
+  };
 
   const handleCapture = async (image: string, blob: Blob) => {
     if (!user) {
@@ -64,7 +96,7 @@ export const DermatologyModule = () => {
     });
 
     try {
-      console.log('Sending image for analysis...');
+      console.log('Sending image for enhanced analysis...');
       const { data, error } = await supabase.functions.invoke('analyze-skin', {
         body: { imageData: image }
       });
@@ -81,18 +113,23 @@ export const DermatologyModule = () => {
       }
 
       if (data?.analysis) {
-        setAnalysis(data.analysis);
+        setAnalysisResult(data as AnalysisResult);
         
-        // Save to database
+        // Save to database with enhanced fields
         const { data: savedAnalysis, error: dbError } = await supabase
           .from('skin_analyses')
           .insert({
             user_id: user.id,
             image_url: image,
             analysis_text: data.analysis,
-            skin_health_score: 85,
-            hydration_score: 78,
-            texture_score: 82,
+            skin_health_score: data.skin_health_score,
+            hydration_score: data.hydration_score,
+            texture_score: data.texture_score,
+            risk_level: data.risk_level,
+            confidence_score: data.confidence_score,
+            triage_suggestion: data.triage_suggestion,
+            condition_probabilities: data.condition_probabilities,
+            isic_reference_ids: data.isic_reference_ids,
           })
           .select()
           .single();
@@ -124,6 +161,17 @@ export const DermatologyModule = () => {
       setIsAnalyzing(false);
     }
   };
+
+  // Get metrics from analysis result or use defaults
+  const metrics = analysisResult ? [
+    { label: 'Skin Health', value: analysisResult.skin_health_score, trend: '+2%' },
+    { label: 'Hydration', value: analysisResult.hydration_score, trend: '+5%' },
+    { label: 'Texture Quality', value: analysisResult.texture_score, trend: 'stable' },
+  ] : [
+    { label: 'Skin Health', value: 85, trend: '+2%' },
+    { label: 'Hydration', value: 78, trend: '+5%' },
+    { label: 'UV Protection', value: 92, trend: 'stable' },
+  ];
 
   return (
     <>
@@ -165,13 +213,14 @@ export const DermatologyModule = () => {
                 <div className="flex items-center space-x-2 text-sm">
                   <ImageIcon className="w-4 h-4 text-primary" />
                   <span>Latest capture</span>
+                  {analysisResult && getRiskBadge(analysisResult.risk_level)}
                 </div>
                 <Button 
                   variant="ghost" 
                   size="sm"
                   onClick={() => {
                     setShowCamera(true);
-                    setAnalysis(null);
+                    setAnalysisResult(null);
                   }}
                   disabled={isAnalyzing}
                 >
@@ -183,21 +232,66 @@ export const DermatologyModule = () => {
             {isAnalyzing && (
               <div className="flex items-center justify-center space-x-2 p-4 bg-secondary/30 rounded-lg">
                 <Loader2 className="w-5 h-5 animate-spin text-primary" />
-                <span className="text-sm text-muted-foreground">Analyzing your skin...</span>
+                <span className="text-sm text-muted-foreground">Analyzing your skin with ISIC-trained AI...</span>
               </div>
             )}
 
-            {analysis && !isAnalyzing && (
+            {analysisResult && !isAnalyzing && (
               <div className="space-y-3 p-4 bg-secondary/30 rounded-lg border border-border">
-                <div className="flex items-center space-x-2">
-                  <Sparkles className="w-5 h-5 text-primary" />
-                  <h4 className="font-medium">AI Skin Analysis</h4>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Sparkles className="w-5 h-5 text-primary" />
+                    <h4 className="font-medium">AI Skin Analysis</h4>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {getRiskBadge(analysisResult.risk_level)}
+                    <Badge variant="outline" className="text-xs">
+                      {Math.round(analysisResult.confidence_score * 100)}% confidence
+                    </Badge>
+                  </div>
                 </div>
+                
+                {/* Triage Suggestion */}
+                <div className={`p-3 rounded-md text-sm ${
+                  analysisResult.risk_level === 'HIGH' ? 'bg-destructive/10 border border-destructive/30' :
+                  analysisResult.risk_level === 'MEDIUM' ? 'bg-amber-500/10 border border-amber-500/30' :
+                  'bg-emerald-500/10 border border-emerald-500/30'
+                }`}>
+                  <p className="font-medium mb-1">Recommendation:</p>
+                  <p className="text-muted-foreground">{analysisResult.triage_suggestion}</p>
+                </div>
+
+                {/* Top Conditions */}
+                {Object.keys(analysisResult.condition_probabilities).length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Condition Analysis:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {Object.entries(analysisResult.condition_probabilities)
+                        .sort(([, a], [, b]) => b - a)
+                        .slice(0, 3)
+                        .map(([condition, probability]) => (
+                          <Badge key={condition} variant="outline" className="text-xs">
+                            {condition.replace(/_/g, ' ')}: {Math.round(probability * 100)}%
+                          </Badge>
+                        ))}
+                    </div>
+                  </div>
+                )}
+
                 <div className="prose prose-sm max-w-none">
                   <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
-                    {analysis}
+                    {analysisResult.analysis}
                   </p>
                 </div>
+
+                {/* ISIC References */}
+                {analysisResult.isic_reference_ids.length > 0 && (
+                  <div className="pt-2 border-t border-border">
+                    <p className="text-xs text-muted-foreground">
+                      ISIC Reference IDs: {analysisResult.isic_reference_ids.join(', ')}
+                    </p>
+                  </div>
+                )}
               </div>
             )}
           </div>

@@ -1,19 +1,43 @@
 import { useState, useEffect, useCallback } from "react";
 
-// Supabase VITE env variables
+declare global {
+  interface Window {
+    gapi: any;
+  }
+}
+
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 const CALENDAR_API_KEY = import.meta.env.VITE_GOOGLE_CALENDAR_API;
 
+export interface CalendarEvent {
+  id: string;
+  summary?: string;
+  start: {
+    dateTime?: string;
+    date?: string;
+  };
+  end?: {
+    dateTime?: string;
+    date?: string;
+  };
+}
+
 export const useGoogleCalendar = () => {
-  const [gapiLoaded, setGapiLoaded] = useState(false);
+  const [isReady, setIsReady] = useState(false);
   const [isSignedIn, setIsSignedIn] = useState(false);
-  const [events, setEvents] = useState([]);
-  const [error, setError] = useState("");
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [error, setError] = useState<Error | null>(null);
 
   // Load GAPI Script
   useEffect(() => {
     if (!CLIENT_ID || !CALENDAR_API_KEY) {
-      setError("Missing required Google API env variables");
+      setError(new Error("Missing required Google API env variables"));
+      return;
+    }
+
+    // Check if script already loaded
+    if (window.gapi) {
+      initGapi();
       return;
     }
 
@@ -21,7 +45,12 @@ export const useGoogleCalendar = () => {
     script.src = "https://apis.google.com/js/api.js";
     script.async = true;
     script.onload = initGapi;
+    script.onerror = () => setError(new Error("Failed to load Google API script"));
     document.body.appendChild(script);
+
+    return () => {
+      // Cleanup if needed
+    };
   }, []);
 
   const initGapi = () => {
@@ -41,145 +70,67 @@ export const useGoogleCalendar = () => {
 
         auth.isSignedIn.listen((signedIn: boolean) => {
           setIsSignedIn(signedIn);
-          if (signedIn) fetchEvents();
         });
 
-        setGapiLoaded(true);
-
-        if (auth.isSignedIn.get()) {
-          fetchEvents();
-        }
-      } catch (err) {
+        setIsReady(true);
+      } catch (err: any) {
         console.error("GAPI init error:", err);
-        setError("Failed to initialize Google API");
+        setError(new Error(err?.message || "Failed to initialize Google API"));
       }
     });
   };
 
-  const signIn = useCallback(() => {
-    if (!gapiLoaded) return;
-    window.gapi.auth2.getAuthInstance().signIn();
-  }, [gapiLoaded]);
-
-  const signOut = useCallback(() => {
-    if (!gapiLoaded) return;
-    window.gapi.auth2.getAuthInstance().signOut();
-  }, [gapiLoaded]);
-
-  const fetchEvents = async () => {
+  const signIn = useCallback(async () => {
+    if (!isReady) return;
     try {
+      await window.gapi.auth2.getAuthInstance().signIn();
+    } catch (err: any) {
+      setError(new Error(err?.message || "Sign in failed"));
+    }
+  }, [isReady]);
+
+  const signOut = useCallback(async () => {
+    if (!isReady) return;
+    try {
+      await window.gapi.auth2.getAuthInstance().signOut();
+      setEvents([]);
+    } catch (err: any) {
+      setError(new Error(err?.message || "Sign out failed"));
+    }
+  }, [isReady]);
+
+  const fetchEvents = useCallback(async (opts?: { timeMin?: string; maxResults?: number }) => {
+    try {
+      if (!window.gapi?.client?.calendar) {
+        throw new Error("Google Calendar API not initialized");
+      }
+
+      const timeMin = opts?.timeMin ?? new Date().toISOString();
+      const maxResults = opts?.maxResults ?? 10;
+
       const response = await window.gapi.client.calendar.events.list({
         calendarId: "primary",
-        timeMin: new Date().toISOString(),
-        maxResults: 10,
+        timeMin,
+        showDeleted: false,
         singleEvents: true,
+        maxResults,
         orderBy: "startTime",
       });
 
-      const items = response.result.items || [];
-      const mapped = items.map((event: any) => ({
-        id: event.id,
-        title: event.summary,
-        time: event.start.dateTime || event.start.date,
-      }));
-
-      setEvents(mapped);
-    } catch (err) {
+      setEvents(response.result.items || []);
+    } catch (err: any) {
       console.error("Calendar fetch error:", err);
-      setError("Failed to fetch calendar events");
-    }
-  };
-
-  return {
-    events,
-    error,
-    isSignedIn,
-    gapiLoaded,
-    signIn,
-    signOut,
-    fetchEvents,
-  };
-};          if (!val) {
-            sessionStorage.removeItem(ACCESS_TOKEN_KEY);
-            setEvents([]);
-          }
-        });
-      } catch (err: any) {
-        setError(err);
-      }
-    };
-
-    initClient();
-  }, [isReady]);
-
-  // Sign In
-  const signIn = useCallback(async () => {
-    try {
-      const auth = window.gapi.auth2.getAuthInstance();
-      const user = await auth.signIn();
-
-      const token = user.getAuthResponse().access_token;
-      sessionStorage.setItem(ACCESS_TOKEN_KEY, token);
-
-      setIsSignedIn(true);
-    } catch (err: any) {
-      setError(err);
-      throw err;
+      setError(new Error(err?.message || "Failed to fetch calendar events"));
     }
   }, []);
-
-  // Sign Out
-  const signOut = useCallback(async () => {
-    try {
-      const auth = window.gapi.auth2.getAuthInstance();
-      await auth.signOut();
-
-      sessionStorage.removeItem(ACCESS_TOKEN_KEY);
-      setIsSignedIn(false);
-      setEvents([]);
-    } catch (err: any) {
-      setError(err);
-      throw err;
-    }
-  }, []);
-
-  // Fetch Events
-  const fetchEvents = useCallback(
-    async (opts?: { timeMin?: string; maxResults?: number }) => {
-      try {
-        if (!window.gapi?.client) {
-          throw new Error("Google API not initialized");
-        }
-
-        const timeMin = opts?.timeMin ?? new Date().toISOString();
-        const maxResults = opts?.maxResults ?? 10;
-
-        const response = await window.gapi.client.calendar.events.list({
-          calendarId: "primary",
-          timeMin,
-          showDeleted: false,
-          singleEvents: true,
-          maxResults,
-          orderBy: "startTime",
-        });
-
-        setEvents(response.result.items || []);
-
-      } catch (err: any) {
-        setError(err);
-        throw err;
-      }
-    },
-    []
-  );
 
   return {
     isReady,
     isSignedIn,
+    events,
+    error,
     signIn,
     signOut,
-    events,
     fetchEvents,
-    error,
   };
- };
+};

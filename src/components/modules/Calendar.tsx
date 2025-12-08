@@ -1,9 +1,9 @@
 // CalendarWidget.tsx
 import React, { useEffect } from "react";
 import { Calendar as CalendarIcon } from "lucide-react";
-import { useGoogleCalendar } from "./useGoogleCalendar";
+import { useGoogleCalendar } from "@/hooks/useGoogleCalendar";
 
-export const CalendarWidget: React.FC = () => {
+export const Calendar: React.FC = () => {
   const { isReady, isSignedIn, signIn, signOut, events, fetchEvents, error } = useGoogleCalendar();
 
   useEffect(() => {

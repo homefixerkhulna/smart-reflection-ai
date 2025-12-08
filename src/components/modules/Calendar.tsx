@@ -28,7 +28,7 @@ export const Calendar: React.FC = () => {
         )}
         
         {error && (
-          <p className="text-sm text-destructive">Error: {error.message}</p>
+          <p className="text-sm text-destructive">Error: {error}</p>
         )}
 
         {!isSignedIn ? (

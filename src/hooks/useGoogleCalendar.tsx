@@ -1,15 +1,22 @@
 import { useState, useEffect, useCallback } from "react";
 
+declare global {
+  interface Window {
+    gapi: any;
+  }
+}
+
 export const useGoogleCalendar = () => {
   const [env, setEnv] = useState<any>(null);
   const [gapiLoaded, setGapiLoaded] = useState(false);
   const [isSignedIn, setIsSignedIn] = useState(false);
-  const [events, setEvents] = useState([]);
+  const [events, setEvents] = useState<any[]>([]);
   const [error, setError] = useState("");
+  const [isReady, setIsReady] = useState(false);
 
   // Load env from Supabase Function
   useEffect(() => {
-    fetch("https://ukdmapzkrrytbxrdvmej.supabase.co/functions/v1/env-loader")
+    fetch("https://hwlokusmhcuwzvwyhhlu.supabase.co/functions/v1/env-loader")
       .then((res) => res.json())
       .then((data) => {
         if (!data.GOOGLE_CLIENT_ID || !data.GOOGLE_CALENDAR_API) {
@@ -29,9 +36,15 @@ export const useGoogleCalendar = () => {
     script.async = true;
     script.onload = initGapi;
     document.body.appendChild(script);
+
+    return () => {
+      document.body.removeChild(script);
+    };
   }, [env]);
 
   const initGapi = () => {
+    if (!window.gapi) return;
+    
     window.gapi.load("client:auth2", async () => {
       try {
         await window.gapi.client.init({
@@ -52,6 +65,7 @@ export const useGoogleCalendar = () => {
         });
 
         setGapiLoaded(true);
+        setIsReady(true);
 
         if (auth.isSignedIn.get()) fetchEvents();
       } catch (err) {
@@ -61,16 +75,18 @@ export const useGoogleCalendar = () => {
   };
 
   const signIn = useCallback(() => {
-    if (!gapiLoaded) return;
+    if (!gapiLoaded || !window.gapi) return;
     window.gapi.auth2.getAuthInstance().signIn();
   }, [gapiLoaded]);
 
   const signOut = useCallback(() => {
-    if (!gapiLoaded) return;
+    if (!gapiLoaded || !window.gapi) return;
     window.gapi.auth2.getAuthInstance().signOut();
   }, [gapiLoaded]);
 
-  const fetchEvents = async () => {
+  const fetchEvents = useCallback(async () => {
+    if (!window.gapi?.client?.calendar) return;
+    
     try {
       const response = await window.gapi.client.calendar.events.list({
         calendarId: "primary",
@@ -91,13 +107,14 @@ export const useGoogleCalendar = () => {
     } catch (err) {
       setError("Failed to fetch calendar events");
     }
-  };
+  }, []);
 
   return {
     env,
     events,
     error,
     isSignedIn,
+    isReady,
     gapiLoaded,
     signIn,
     signOut,

@@ -1,111 +1,105 @@
-// src/hooks/useGoogleCalendar.tsx
-import { useCallback, useEffect, useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 
-declare global {
-  interface Window {
-    gapi: any;
-  }
-}
+// Supabase VITE env variables
+const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+const CALENDAR_API_KEY = import.meta.env.VITE_GOOGLE_CALENDAR_API;
 
-type GoogleEvent = {
-  id: string;
-  summary?: string;
-  description?: string;
-  start: { dateTime?: string; date?: string };
-  end: { dateTime?: string; date?: string };
-  htmlLink?: string;
-};
-
-type UseGoogleCalendarReturn = {
-  isReady: boolean;
-  isSignedIn: boolean;
-  signIn: () => Promise<void>;
-  signOut: () => Promise<void>;
-  events: GoogleEvent[];
-  fetchEvents: (opts?: { timeMin?: string; maxResults?: number }) => Promise<void>;
-  error?: Error | null;
-};
-
-const GAPI_SRC = "https://apis.google.com/js/api.js";
-
-// ✅ Supabase + Vite environment variables
-const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID!;
-const API_KEY = import.meta.env.VITE_GOOGLE_CALENDAR_API!;
-
-const SCOPES = "https://www.googleapis.com/auth/calendar.readonly";
-const DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest"];
-
-const ACCESS_TOKEN_KEY = "gcal_access_token_v1";
-
-/**
- * useGoogleCalendar Hook
- */
-export function useGoogleCalendar(): UseGoogleCalendarReturn {
-  const [isReady, setIsReady] = useState(false);
+export const useGoogleCalendar = () => {
+  const [gapiLoaded, setGapiLoaded] = useState(false);
   const [isSignedIn, setIsSignedIn] = useState(false);
-  const [events, setEvents] = useState<GoogleEvent[]>([]);
-  const [error, setError] = useState<Error | null>(null);
+  const [events, setEvents] = useState([]);
+  const [error, setError] = useState("");
 
-  // Load Google API script
+  // Load GAPI Script
   useEffect(() => {
-    if (window.gapi) {
-      setIsReady(true);
-      return;
-    }
-
-    const existingScript = document.querySelector<HTMLScriptElement>(
-      `script[src="${GAPI_SRC}"]`
-    );
-
-    if (existingScript) {
-      existingScript.addEventListener("load", () => setIsReady(true));
+    if (!CLIENT_ID || !CALENDAR_API_KEY) {
+      setError("Missing required Google API env variables");
       return;
     }
 
     const script = document.createElement("script");
-    script.src = GAPI_SRC;
+    script.src = "https://apis.google.com/js/api.js";
     script.async = true;
-    script.defer = true;
-    script.onload = () => setIsReady(true);
-    script.onerror = () => setError(new Error("Failed to load Google API script"));
-
+    script.onload = initGapi;
     document.body.appendChild(script);
   }, []);
 
-  // Initialize Google API client
-  useEffect(() => {
-    if (!isReady) return;
-
-    if (!CLIENT_ID || !API_KEY) {
-      setError(new Error("Missing required Google API env variables"));
-      return;
-    }
-
-    const initClient = async () => {
+  const initGapi = () => {
+    window.gapi.load("client:auth2", async () => {
       try {
-        await new Promise<void>((resolve, reject) => {
-          window.gapi.load("client:auth2", {
-            callback: resolve,
-            onerror: () => reject(new Error("gapi client load error")),
-          });
-        });
-
         await window.gapi.client.init({
-          apiKey: API_KEY,
+          apiKey: CALENDAR_API_KEY,
           clientId: CLIENT_ID,
-          discoveryDocs: DISCOVERY_DOCS,
-          scope: SCOPES,
+          discoveryDocs: [
+            "https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest",
+          ],
+          scope: "https://www.googleapis.com/auth/calendar.readonly",
         });
 
         const auth = window.gapi.auth2.getAuthInstance();
-        const loggedIn = auth.isSignedIn.get();
+        setIsSignedIn(auth.isSignedIn.get());
 
-        setIsSignedIn(loggedIn);
+        auth.isSignedIn.listen((signedIn: boolean) => {
+          setIsSignedIn(signedIn);
+          if (signedIn) fetchEvents();
+        });
 
-        // Listen for auth changes
-        auth.isSignedIn.listen((val: boolean) => {
-          setIsSignedIn(val);
-          if (!val) {
+        setGapiLoaded(true);
+
+        if (auth.isSignedIn.get()) {
+          fetchEvents();
+        }
+      } catch (err) {
+        console.error("GAPI init error:", err);
+        setError("Failed to initialize Google API");
+      }
+    });
+  };
+
+  const signIn = useCallback(() => {
+    if (!gapiLoaded) return;
+    window.gapi.auth2.getAuthInstance().signIn();
+  }, [gapiLoaded]);
+
+  const signOut = useCallback(() => {
+    if (!gapiLoaded) return;
+    window.gapi.auth2.getAuthInstance().signOut();
+  }, [gapiLoaded]);
+
+  const fetchEvents = async () => {
+    try {
+      const response = await window.gapi.client.calendar.events.list({
+        calendarId: "primary",
+        timeMin: new Date().toISOString(),
+        maxResults: 10,
+        singleEvents: true,
+        orderBy: "startTime",
+      });
+
+      const items = response.result.items || [];
+      const mapped = items.map((event: any) => ({
+        id: event.id,
+        title: event.summary,
+        time: event.start.dateTime || event.start.date,
+      }));
+
+      setEvents(mapped);
+    } catch (err) {
+      console.error("Calendar fetch error:", err);
+      setError("Failed to fetch calendar events");
+    }
+  };
+
+  return {
+    events,
+    error,
+    isSignedIn,
+    gapiLoaded,
+    signIn,
+    signOut,
+    fetchEvents,
+  };
+};          if (!val) {
             sessionStorage.removeItem(ACCESS_TOKEN_KEY);
             setEvents([]);
           }
@@ -188,4 +182,4 @@ export function useGoogleCalendar(): UseGoogleCalendarReturn {
     fetchEvents,
     error,
   };
- }
+ };

@@ -1,64 +1,42 @@
 import { useState, useEffect, useCallback } from "react";
 
-declare global {
-  interface Window {
-    gapi: any;
-  }
-}
-
-const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-const CALENDAR_API_KEY = import.meta.env.VITE_GOOGLE_CALENDAR_API;
-
-export interface CalendarEvent {
-  id: string;
-  summary?: string;
-  start: {
-    dateTime?: string;
-    date?: string;
-  };
-  end?: {
-    dateTime?: string;
-    date?: string;
-  };
-}
-
 export const useGoogleCalendar = () => {
-  const [isReady, setIsReady] = useState(false);
+  const [env, setEnv] = useState<any>(null);
+  const [gapiLoaded, setGapiLoaded] = useState(false);
   const [isSignedIn, setIsSignedIn] = useState(false);
-  const [events, setEvents] = useState<CalendarEvent[]>([]);
-  const [error, setError] = useState<Error | null>(null);
+  const [events, setEvents] = useState([]);
+  const [error, setError] = useState("");
 
-  // Load GAPI Script
+  // Load env from Supabase Function
   useEffect(() => {
-    if (!CLIENT_ID || !CALENDAR_API_KEY) {
-      setError(new Error("Missing required Google API env variables"));
-      return;
-    }
+    fetch("https://ukdmapzkrrytbxrdvmej.supabase.co/functions/v1/env-loader")
+      .then((res) => res.json())
+      .then((data) => {
+        if (!data.GOOGLE_CLIENT_ID || !data.GOOGLE_CALENDAR_API) {
+          setError("Missing Google API environment variables");
+        }
+        setEnv(data);
+      })
+      .catch(() => setError("Failed to load environment variables"));
+  }, []);
 
-    // Check if script already loaded
-    if (window.gapi) {
-      initGapi();
-      return;
-    }
+  // Load Google API script
+  useEffect(() => {
+    if (!env) return;
 
     const script = document.createElement("script");
     script.src = "https://apis.google.com/js/api.js";
     script.async = true;
     script.onload = initGapi;
-    script.onerror = () => setError(new Error("Failed to load Google API script"));
     document.body.appendChild(script);
-
-    return () => {
-      // Cleanup if needed
-    };
-  }, []);
+  }, [env]);
 
   const initGapi = () => {
     window.gapi.load("client:auth2", async () => {
       try {
         await window.gapi.client.init({
-          apiKey: CALENDAR_API_KEY,
-          clientId: CLIENT_ID,
+          apiKey: env.GOOGLE_CALENDAR_API,
+          clientId: env.GOOGLE_CLIENT_ID,
           discoveryDocs: [
             "https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest",
           ],
@@ -70,65 +48,57 @@ export const useGoogleCalendar = () => {
 
         auth.isSignedIn.listen((signedIn: boolean) => {
           setIsSignedIn(signedIn);
+          if (signedIn) fetchEvents();
         });
 
-        setIsReady(true);
-      } catch (err: any) {
-        console.error("GAPI init error:", err);
-        setError(new Error(err?.message || "Failed to initialize Google API"));
+        setGapiLoaded(true);
+
+        if (auth.isSignedIn.get()) fetchEvents();
+      } catch (err) {
+        setError("Failed to initialize Google API");
       }
     });
   };
 
-  const signIn = useCallback(async () => {
-    if (!isReady) return;
+  const signIn = useCallback(() => {
+    if (!gapiLoaded) return;
+    window.gapi.auth2.getAuthInstance().signIn();
+  }, [gapiLoaded]);
+
+  const signOut = useCallback(() => {
+    if (!gapiLoaded) return;
+    window.gapi.auth2.getAuthInstance().signOut();
+  }, [gapiLoaded]);
+
+  const fetchEvents = async () => {
     try {
-      await window.gapi.auth2.getAuthInstance().signIn();
-    } catch (err: any) {
-      setError(new Error(err?.message || "Sign in failed"));
-    }
-  }, [isReady]);
-
-  const signOut = useCallback(async () => {
-    if (!isReady) return;
-    try {
-      await window.gapi.auth2.getAuthInstance().signOut();
-      setEvents([]);
-    } catch (err: any) {
-      setError(new Error(err?.message || "Sign out failed"));
-    }
-  }, [isReady]);
-
-  const fetchEvents = useCallback(async (opts?: { timeMin?: string; maxResults?: number }) => {
-    try {
-      if (!window.gapi?.client?.calendar) {
-        throw new Error("Google Calendar API not initialized");
-      }
-
-      const timeMin = opts?.timeMin ?? new Date().toISOString();
-      const maxResults = opts?.maxResults ?? 10;
-
       const response = await window.gapi.client.calendar.events.list({
         calendarId: "primary",
-        timeMin,
-        showDeleted: false,
+        timeMin: new Date().toISOString(),
+        maxResults: 10,
         singleEvents: true,
-        maxResults,
         orderBy: "startTime",
       });
 
-      setEvents(response.result.items || []);
-    } catch (err: any) {
-      console.error("Calendar fetch error:", err);
-      setError(new Error(err?.message || "Failed to fetch calendar events"));
+      const items = response.result.items || [];
+      setEvents(
+        items.map((event: any) => ({
+          id: event.id,
+          title: event.summary,
+          time: event.start.dateTime || event.start.date,
+        }))
+      );
+    } catch (err) {
+      setError("Failed to fetch calendar events");
     }
-  }, []);
+  };
 
   return {
-    isReady,
-    isSignedIn,
+    env,
     events,
     error,
+    isSignedIn,
+    gapiLoaded,
     signIn,
     signOut,
     fetchEvents,

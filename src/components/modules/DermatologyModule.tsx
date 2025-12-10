@@ -10,14 +10,19 @@ import { useNavigate } from "react-router-dom";
 
 interface AnalysisResult {
   analysis: string;
+  analysis_bn: string;
   risk_level: 'LOW' | 'MEDIUM' | 'HIGH';
   confidence_score: number;
   triage_suggestion: string;
+  triage_suggestion_bn: string;
   condition_probabilities: Record<string, number>;
+  disease_probabilities: Record<string, number>;
   skin_health_score: number;
   hydration_score: number;
   texture_score: number;
   isic_reference_ids: string[];
+  visual_features: { en: string[]; bn: string[] };
+  general_skin_info: { en: string; bn: string };
 }
 
 export const DermatologyModule = () => {
@@ -115,21 +120,26 @@ export const DermatologyModule = () => {
       if (data?.analysis) {
         setAnalysisResult(data as AnalysisResult);
         
-        // Save to database with enhanced fields
+        // Save to database with enhanced fields including Bengali translations and 20 diseases
         const { data: savedAnalysis, error: dbError } = await supabase
           .from('skin_analyses')
           .insert({
             user_id: user.id,
             image_url: image,
             analysis_text: data.analysis,
+            analysis_text_bn: data.analysis_bn,
             skin_health_score: data.skin_health_score,
             hydration_score: data.hydration_score,
             texture_score: data.texture_score,
             risk_level: data.risk_level,
             confidence_score: data.confidence_score,
             triage_suggestion: data.triage_suggestion,
+            triage_suggestion_bn: data.triage_suggestion_bn,
             condition_probabilities: data.condition_probabilities,
+            disease_probabilities: data.disease_probabilities,
             isic_reference_ids: data.isic_reference_ids,
+            visual_features: data.visual_features,
+            general_skin_info: data.general_skin_info,
           })
           .select()
           .single();

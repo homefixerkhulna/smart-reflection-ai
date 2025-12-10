@@ -68,10 +68,13 @@ export type Database = {
       skin_analyses: {
         Row: {
           analysis_text: string
+          analysis_text_bn: string | null
           brightness_score: number | null
           condition_probabilities: Json | null
           confidence_score: number | null
           created_at: string
+          disease_probabilities: Json | null
+          general_skin_info: Json | null
           hydration_score: number | null
           id: string
           image_url: string
@@ -82,14 +85,19 @@ export type Database = {
           skin_health_score: number | null
           texture_score: number | null
           triage_suggestion: string | null
+          triage_suggestion_bn: string | null
           user_id: string
+          visual_features: Json | null
         }
         Insert: {
           analysis_text: string
+          analysis_text_bn?: string | null
           brightness_score?: number | null
           condition_probabilities?: Json | null
           confidence_score?: number | null
           created_at?: string
+          disease_probabilities?: Json | null
+          general_skin_info?: Json | null
           hydration_score?: number | null
           id?: string
           image_url: string
@@ -100,14 +108,19 @@ export type Database = {
           skin_health_score?: number | null
           texture_score?: number | null
           triage_suggestion?: string | null
+          triage_suggestion_bn?: string | null
           user_id: string
+          visual_features?: Json | null
         }
         Update: {
           analysis_text?: string
+          analysis_text_bn?: string | null
           brightness_score?: number | null
           condition_probabilities?: Json | null
           confidence_score?: number | null
           created_at?: string
+          disease_probabilities?: Json | null
+          general_skin_info?: Json | null
           hydration_score?: number | null
           id?: string
           image_url?: string
@@ -118,7 +131,9 @@ export type Database = {
           skin_health_score?: number | null
           texture_score?: number | null
           triage_suggestion?: string | null
+          triage_suggestion_bn?: string | null
           user_id?: string
+          visual_features?: Json | null
         }
         Relationships: []
       }

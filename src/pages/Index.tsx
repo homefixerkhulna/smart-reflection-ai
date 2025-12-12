@@ -13,86 +13,60 @@ import { TodaySchedule } from "@/components/modules/tasks/TodaySchedule";
 import { useTasks } from "@/components/modules/tasks/hooks/useTasks";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-
 const Index = () => {
-  const { signOut, user } = useAuth();
+  const {
+    signOut,
+    user
+  } = useAuth();
   const navigate = useNavigate();
   const [analyses, setAnalyses] = useState<any[]>([]);
-  const { todayTasks, markComplete, markPending } = useTasks();
-
+  const {
+    todayTasks,
+    markComplete,
+    markPending
+  } = useTasks();
   useEffect(() => {
     const fetchAnalyses = async () => {
       if (!user) return;
-      const { data } = await supabase
-        .from('skin_analyses')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+      const {
+        data
+      } = await supabase.from('skin_analyses').select('*').eq('user_id', user.id).order('created_at', {
+        ascending: false
+      });
       if (data) setAnalyses(data);
     };
     fetchAnalyses();
 
     // Real-time subscription for new analyses
-    const channel = supabase
-      .channel('skin-analyses-realtime')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'skin_analyses',
-          filter: `user_id=eq.${user?.id}`,
-        },
-        (payload) => {
-          setAnalyses((prev) => [payload.new as any, ...prev]);
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'DELETE',
-          schema: 'public',
-          table: 'skin_analyses',
-          filter: `user_id=eq.${user?.id}`,
-        },
-        (payload) => {
-          setAnalyses((prev) => prev.filter((a) => a.id !== payload.old.id));
-        }
-      )
-      .subscribe();
-
+    const channel = supabase.channel('skin-analyses-realtime').on('postgres_changes', {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'skin_analyses',
+      filter: `user_id=eq.${user?.id}`
+    }, payload => {
+      setAnalyses(prev => [payload.new as any, ...prev]);
+    }).on('postgres_changes', {
+      event: 'DELETE',
+      schema: 'public',
+      table: 'skin_analyses',
+      filter: `user_id=eq.${user?.id}`
+    }, payload => {
+      setAnalyses(prev => prev.filter(a => a.id !== payload.old.id));
+    }).subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
   }, [user]);
-
-  return (
-    <div className="min-h-screen bg-background p-8">
+  return <div className="min-h-screen bg-background p-8">
       {/* Header */}
       <header className="absolute top-8 right-8 z-10 flex gap-2">
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className="glass rounded-full"
-          onClick={() => navigate("/tasks")}
-          title="Tasks"
-        >
+        <Button variant="ghost" size="icon" className="glass rounded-full" onClick={() => navigate("/tasks")} title="Tasks">
           <ListTodo className="w-5 h-5" />
         </Button>
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className="glass rounded-full"
-          onClick={() => navigate("/settings")}
-        >
+        <Button variant="ghost" size="icon" className="glass rounded-full" onClick={() => navigate("/settings")}>
           <Settings className="w-5 h-5" />
         </Button>
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className="glass rounded-full"
-          onClick={signOut}
-        >
+        <Button variant="ghost" size="icon" className="glass rounded-full" onClick={signOut}>
           <LogOut className="w-5 h-5" />
         </Button>
       </header>
@@ -114,21 +88,15 @@ const Index = () => {
 
         {/* Right Column */}
         <div className="space-y-8 pt-32">
-          <News />
+          <News className="text-primary-foreground" />
           
           {/* Today's Schedule */}
-          <TodaySchedule 
-            tasks={todayTasks} 
-            onMarkComplete={markComplete} 
-            onMarkPending={markPending} 
-          />
+          <TodaySchedule tasks={todayTasks} onMarkComplete={markComplete} onMarkPending={markPending} />
         </div>
       </div>
 
       {/* Dermatology Chat Assistant */}
       <DermatologyChat analyses={analyses} />
-    </div>
-  );
+    </div>;
 };
-
 export default Index;

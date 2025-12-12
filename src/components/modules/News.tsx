@@ -1,16 +1,13 @@
 import { Newspaper } from "lucide-react";
 import { useEffect, useState } from "react";
-
 interface Article {
   title: string;
 }
-
 export const News = () => {
   const [newsItems, setNewsItems] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
-
   useEffect(() => {
     const fetchNews = async () => {
       try {
@@ -24,45 +21,32 @@ export const News = () => {
         setLoading(false);
       } catch (err) {
         if (err instanceof Error) {
-            setError(err.message);
+          setError(err.message);
         } else {
-            setError('An unknown error occurred');
+          setError('An unknown error occurred');
         }
         setLoading(false);
       }
     };
-
     fetchNews();
   }, []);
-
   useEffect(() => {
     if (newsItems.length > 0) {
       const interval = setInterval(() => {
-        setCurrentIndex((prev) => (prev + 1) % newsItems.length);
+        setCurrentIndex(prev => (prev + 1) % newsItems.length);
       }, 5000);
       return () => clearInterval(interval);
     }
   }, [newsItems]);
-
-  return (
-    <div className="glass rounded-2xl p-6">
+  return <div className="glass rounded-2xl p-6">
       <div className="flex items-center space-x-2 mb-4">
         <Newspaper className="w-5 h-5 text-primary" />
-        <h3 className="text-lg font-medium">Latest News</h3>
+        <h3 className="font-medium text-primary text-sm">Latest News</h3>
       </div>
       <div className="text-sm text-muted-foreground leading-relaxed h-12 flex items-center">
-        {loading ? (
-          <p>Loading news...</p>
-        ) : error ? (
-          <p className="text-red-500">{error}</p>
-        ) : newsItems.length > 0 ? (
-          <p className="animate-in fade-in duration-500" key={currentIndex}>
+        {loading ? <p>Loading news...</p> : error ? <p className="text-red-500">{error}</p> : newsItems.length > 0 ? <p key={currentIndex} className="animate-in fade-in duration-500 text-primary-foreground text-lg">
             {newsItems[currentIndex]}
-          </p>
-        ) : (
-          <p>No news available.</p>
-        )}
+          </p> : <p>No news available.</p>}
       </div>
-    </div>
-  );
+    </div>;
 };

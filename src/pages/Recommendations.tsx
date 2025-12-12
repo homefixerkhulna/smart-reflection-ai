@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Sparkles, TrendingUp, AlertCircle, CheckCircle2, Droplets, Package } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Languages } from "lucide-react";
 
 interface Recommendation {
   category: string;

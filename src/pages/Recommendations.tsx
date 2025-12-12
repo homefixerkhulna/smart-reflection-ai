@@ -143,6 +143,10 @@ export default function Recommendations() {
           <Button variant="ghost" size="icon" onClick={() => navigate('/history')}>
             <ArrowLeft className="w-5 h-5" />
           </Button>
+          <Button variant="outline" size="sm" onClick={() => setLanguage(language === 'en' ? 'bn' : 'en')} 
+          className="flex items-center gap-1"><Languages className="w-4 h-4" />
+            {language === 'en' ? 'বাংলা' : 'English'}
+          </Button>
           <div>
             <h1 className="text-3xl font-bold text-foreground">Personalized Recommendations</h1>
             <p className="text-muted-foreground mt-1">AI-powered skincare guidance based on your progress</p>

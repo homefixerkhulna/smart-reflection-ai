@@ -38,6 +38,7 @@ export default function Recommendations() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [recommendations, setRecommendations] = useState<RecommendationData | null>(null);
+  const [language, setLanguage] = useState<'en' | 'bn'>('en');
 
   useEffect(() => {
     if (user) {

@@ -1,9 +1,16 @@
 import { Newspaper } from "lucide-react";
 import { useEffect, useState } from "react";
+import { cn } from "@/lib/utils";
+
 interface Article {
   title: string;
 }
-export const News = () => {
+
+interface NewsProps {
+  className?: string;
+}
+
+export const News = ({ className }: NewsProps) => {
   const [newsItems, setNewsItems] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

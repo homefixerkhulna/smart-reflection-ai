@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Send, Loader2, Sparkles, AlertTriangle, CheckCircle, AlertCircle, Languages } from 'lucide-react';
+import { ArrowLeft, Send, Loader2, Sparkles, AlertTriangle, CheckCircle, AlertCircle, Languages, Droplets } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
@@ -402,6 +402,20 @@ export default function SkinAnalysisResults() {
               </p>
             </div>
           )}
+
+          {/* Generate Skincare Routine Button */}
+          <div className="flex justify-center py-4">
+            <Button 
+              onClick={() => navigate(`/skincare-routine/${analysisId}`)}
+              className="flex items-center gap-2"
+              size="lg"
+            >
+              <Droplets className="w-5 h-5" />
+              {language === 'en' 
+                ? 'Generate Personalized Skincare Routine' 
+                : 'ব্যক্তিগত স্কিনকেয়ার রুটিন তৈরি করুন'}
+            </Button>
+          </div>
 
           {/* Chat Section */}
           <div className="border-t border-border pt-6">

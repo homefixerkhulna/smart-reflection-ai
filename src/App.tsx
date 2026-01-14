@@ -15,6 +15,7 @@ import AnalysisHistory from "./pages/AnalysisHistory";
 import AnalysisComparison from "./pages/AnalysisComparison";
 import AnalysisTrends from "./pages/AnalysisTrends";
 import Recommendations from "./pages/Recommendations";
+import SkincareRoutine from "./pages/SkincareRoutine";
 import Settings from "./pages/Settings";
 import Tasks from "./pages/Tasks";
 import NotFound from "./pages/NotFound";
@@ -38,6 +39,7 @@ const App = () => (
                 <Route path="/trends" element={<ProtectedRoute><AnalysisTrends /></ProtectedRoute>} />
                 <Route path="/recommendations" element={<ProtectedRoute><Recommendations /></ProtectedRoute>} />
                 <Route path="/compare" element={<ProtectedRoute><AnalysisComparison /></ProtectedRoute>} />
+                <Route path="/skincare-routine/:id" element={<ProtectedRoute><SkincareRoutine /></ProtectedRoute>} />
                 <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
                 <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />

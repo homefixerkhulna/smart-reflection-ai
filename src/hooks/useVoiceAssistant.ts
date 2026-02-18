@@ -1,76 +1,82 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
 type VoiceState = "idle" | "listening" | "processing" | "speaking";
 
-interface SpeechRecognitionEvent {
-  results: SpeechRecognitionResultList;
-  resultIndex: number;
-}
+// Use any for cross-browser SpeechRecognition compatibility
 
-interface SpeechRecognitionErrorEvent {
-  error: string;
-  message?: string;
-}
-
-interface SpeechRecognition extends EventTarget {
-  continuous: boolean;
-  interimResults: boolean;
-  lang: string;
-  start(): void;
-  stop(): void;
-  abort(): void;
-  onresult: ((event: SpeechRecognitionEvent) => void) | null;
-  onerror: ((event: SpeechRecognitionErrorEvent) => void) | null;
-  onend: (() => void) | null;
-  onstart: (() => void) | null;
-}
-
-declare global {
-  interface Window {
-    SpeechRecognition: new () => SpeechRecognition;
-    webkitSpeechRecognition: new () => SpeechRecognition;
-  }
-}
+const WAKE_WORDS = ["hey ivy", "ivy", "আইভি", "আইভী", "আইবি"];
 
 export const useVoiceAssistant = () => {
+  const navigate = useNavigate();
+
   const [state, setState] = useState<VoiceState>("idle");
   const [transcript, setTranscript] = useState("");
   const [response, setResponse] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [isSupported, setIsSupported] = useState(true);
 
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const recognitionRef = useRef<any>(null);
   const synthRef = useRef<SpeechSynthesis | null>(null);
+  const isProcessingRef = useRef(false);
 
-  useEffect(() => {
-    const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognitionAPI || !window.speechSynthesis) {
-      setIsSupported(false);
-      setError("Voice features not supported in this browser. Try Chrome or Edge.");
-      return;
-    }
-    synthRef.current = window.speechSynthesis;
-  }, []);
-
-  const speak = useCallback((text: string) => {
+  const speak = useCallback(async (text: string) => {
     if (!synthRef.current) return;
-    
+
     synthRef.current.cancel();
+    await new Promise((r) => setTimeout(r, 150));
+
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 1;
-    utterance.pitch = 1;
-    utterance.volume = 1;
-    
+
     utterance.onstart = () => setState("speaking");
-    utterance.onend = () => setState("idle");
-    utterance.onerror = () => setState("idle");
-    
+    utterance.onend = () => {
+      setState("listening");
+      startListeningInternal();
+    };
+    utterance.onerror = () => {
+      setState("idle");
+    };
+
     synthRef.current.speak(utterance);
   }, []);
 
-  const processWithAI = useCallback(async (userText: string) => {
+  const detectWakeWord = (text: string) => {
+    const lower = text.toLowerCase();
+    for (const word of WAKE_WORDS) {
+      if (lower.includes(word)) {
+        return lower.replace(word, "").trim();
+      }
+    }
+    return null;
+  };
+
+  const handleLocalCommand = useCallback(async (command: string) => {
+    if (command.includes("open tasks")) {
+      navigate("/tasks");
+      await speak("Opening tasks page");
+      return true;
+    }
+    if (command.includes("open settings")) {
+      navigate("/settings");
+      await speak("Opening settings");
+      return true;
+    }
+    if (command.includes("go home")) {
+      navigate("/");
+      await speak("Going home");
+      return true;
+    }
+    if (command.includes("logout")) {
+      await supabase.auth.signOut();
+      await speak("Logged out successfully");
+      return true;
+    }
+    return false;
+  }, [navigate, speak]);
+
+  const callAI = useCallback(async (text: string) => {
     setState("processing");
+    isProcessingRef.current = true;
     setError(null);
 
     try {
@@ -79,7 +85,7 @@ export const useVoiceAssistant = () => {
         throw new Error("Please sign in to use voice assistant");
       }
 
-      const response = await fetch(
+      const res = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/voice-assistant`,
         {
           method: "POST",
@@ -87,45 +93,36 @@ export const useVoiceAssistant = () => {
             "Content-Type": "application/json",
             Authorization: `Bearer ${session.access_token}`,
           },
-          body: JSON.stringify({ user_text: userText }),
+          body: JSON.stringify({ user_text: text }),
         }
       );
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to process request");
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || "Failed to process request");
       }
 
-      const data = await response.json();
+      const data = await res.json();
       setResponse(data.response);
-      speak(data.response);
+      await speak(data.response);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "An error occurred";
-      setError(errorMessage);
+      const msg = err instanceof Error ? err.message : "An error occurred";
+      setError(msg);
       setState("idle");
+    } finally {
+      isProcessingRef.current = false;
     }
   }, [speak]);
 
-  const startListening = useCallback(() => {
-    if (!isSupported) return;
-    
-    setError(null);
-    setTranscript("");
+  const startListeningInternal = useCallback(() => {
+    if (isProcessingRef.current) return;
 
-    // Stop any previous instance first
+    // Abort previous
     if (recognitionRef.current) {
-      try {
-        recognitionRef.current.abort();
-      } catch (_) {}
+      try { recognitionRef.current.abort(); } catch (_) {}
       recognitionRef.current = null;
     }
 
-    // Cancel any ongoing speech synthesis
-    if (synthRef.current) {
-      synthRef.current.cancel();
-    }
-
-    // Small delay to let Chrome release the previous recognition session
     setTimeout(() => {
       try {
         const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -136,70 +133,80 @@ export const useVoiceAssistant = () => {
 
         const recognition = new SpeechRecognitionAPI();
         recognitionRef.current = recognition;
-        
-        recognition.continuous = false;
-        recognition.interimResults = true;
-        recognition.lang = "en-US";
+
+        recognition.continuous = true;
+        recognition.lang = "bn-BD";
 
         recognition.onstart = () => {
           setState("listening");
         };
 
-        recognition.onresult = (event: SpeechRecognitionEvent) => {
-          let finalTranscript = "";
-          let interimTranscript = "";
+        recognition.onresult = async (event: any) => {
+          const text = event.results[event.results.length - 1][0].transcript;
+          setTranscript(text);
 
-          for (let i = event.resultIndex; i < event.results.length; i++) {
-            const result = event.results[i];
-            if (result.isFinal) {
-              finalTranscript += result[0].transcript;
-            } else {
-              interimTranscript += result[0].transcript;
-            }
-          }
+          const command = detectWakeWord(text);
+          if (!command) return;
 
-          setTranscript(finalTranscript || interimTranscript);
+          recognition.stop();
 
-          if (finalTranscript) {
-            processWithAI(finalTranscript);
+          const handled = await handleLocalCommand(command);
+          if (!handled) {
+            await callAI(command);
           }
         };
 
-        recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+        recognition.onerror = (event: any) => {
           console.error("Speech recognition error:", event.error);
           if (event.error === "not-allowed") {
-            setError("মাইক্রোফোন অনুমতি দিন। ব্রাউজারের অ্যাড্রেস বারে 🔒 আইকনে ক্লিক করুন।");
+            setError("মাইক্রোফোন অনুমতি দিন।");
           } else if (event.error === "aborted" || event.error === "no-speech") {
-            // Silently handle — not a real error
+            // Silent
           } else {
-            setError(`স্পিচ রেকগনিশন সমস্যা: ${event.error}। আবার চেষ্টা করুন।`);
+            setError(`স্পিচ রেকগনিশন সমস্যা: ${event.error}`);
           }
-          setState("idle");
         };
 
         recognition.onend = () => {
-          // Only reset to idle if we're still in listening state
-          setState((prev) => prev === "listening" ? "idle" : prev);
+          if (!isProcessingRef.current) {
+            setTimeout(startListeningInternal, 500);
+          }
         };
 
         recognition.start();
       } catch (err) {
         console.error("Failed to start speech recognition:", err);
-        setError("স্পিচ রেকগনিশন শুরু করা যাচ্ছে না। পেজ রিফ্রেশ করে আবার চেষ্টা করুন।");
+        setError("স্পিচ রেকগনিশন শুরু করা যাচ্ছে না।");
         setState("idle");
       }
     }, 150);
-  }, [isSupported, processWithAI]);
+  }, [handleLocalCommand, callAI]);
+
+  useEffect(() => {
+    synthRef.current = window.speechSynthesis;
+    startListeningInternal();
+
+    return () => {
+      recognitionRef.current?.abort();
+      synthRef.current?.cancel();
+    };
+  }, [startListeningInternal]);
 
   const stopListening = useCallback(() => {
     if (recognitionRef.current) {
-      recognitionRef.current.stop();
+      recognitionRef.current.abort();
     }
     if (synthRef.current) {
       synthRef.current.cancel();
     }
+    isProcessingRef.current = true; // prevent auto-restart
     setState("idle");
   }, []);
+
+  const startListening = useCallback(() => {
+    isProcessingRef.current = false;
+    startListeningInternal();
+  }, [startListeningInternal]);
 
   const reset = useCallback(() => {
     stopListening();
@@ -213,7 +220,7 @@ export const useVoiceAssistant = () => {
     transcript,
     response,
     error,
-    isSupported,
+    isSupported: true,
     startListening,
     stopListening,
     reset,

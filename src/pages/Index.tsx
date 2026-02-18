@@ -132,7 +132,7 @@ const Index = () => {
         <div className="flex flex-col items-center justify-center relative">
           {/* 3D Avatar */}
           {showAvatar && (
-            <div className="w-full h-[420px] relative">
+            <div className="w-full h-[380px] relative">
               <Avatar3D
                 isListening={voiceState === "listening"}
                 isSpeaking={voiceState === "speaking"}
@@ -142,64 +142,71 @@ const Index = () => {
             </div>
           )}
 
-          {/* Voice interaction panel */}
-          <div className="w-full mt-4 space-y-3">
-            {/* Transcript / Response */}
-            {(transcript || voiceResponse || voiceError) && (
-              <div className="glass rounded-2xl p-4 space-y-2 max-h-40 overflow-y-auto">
-                {transcript && (
-                  <div className="bg-secondary/50 rounded-lg p-2">
-                    <p className="text-xs text-muted-foreground">আপনি বললেন:</p>
-                    <p className="text-sm">{transcript}</p>
-                  </div>
-                )}
-                {voiceResponse && (
-                  <div className="bg-primary/10 rounded-lg p-2">
-                    <p className="text-xs text-muted-foreground">সহকারী:</p>
-                    <p className="text-sm">{voiceResponse}</p>
-                  </div>
-                )}
-                {voiceError && (
-                  <p className="text-sm text-destructive">{voiceError}</p>
-                )}
-              </div>
-            )}
-
-            {/* Status + Mic button */}
-            {voiceSupported && (
-              <div className="flex items-center justify-center gap-3">
-                <span className="text-xs text-muted-foreground">
-                  {voiceState === "listening" && "🎙️ শুনছি..."}
-                  {voiceState === "processing" && "⏳ প্রক্রিয়াকরণ..."}
-                  {voiceState === "speaking" && "🔊 বলছি..."}
-                  {voiceState === "idle" && "মাইক ট্যাপ করুন"}
-                </span>
+          {/* Mic Button — directly below avatar */}
+          {voiceSupported && (
+            <div className="flex flex-col items-center gap-2 mt-2">
+              {/* Glow ring around mic */}
+              <div className={cn(
+                "relative rounded-full p-1 transition-all duration-500",
+                voiceState === "listening" && "shadow-[0_0_24px_4px_hsl(var(--destructive)/0.5)]",
+                voiceState === "speaking" && "shadow-[0_0_24px_4px_hsl(var(--primary)/0.4)]",
+                voiceState === "processing" && "shadow-[0_0_16px_2px_hsl(var(--muted-foreground)/0.3)]",
+              )}>
                 <Button
                   size="lg"
                   onClick={handleMicClick}
                   disabled={voiceState === "processing" || voiceState === "speaking"}
                   className={cn(
-                    "h-14 w-14 rounded-full shadow-lg transition-all",
-                    voiceState === "listening" && "bg-destructive hover:bg-destructive/90 animate-pulse",
+                    "h-16 w-16 rounded-full shadow-xl transition-all duration-300",
+                    voiceState === "listening" && "bg-destructive hover:bg-destructive/90 animate-pulse scale-110",
                     voiceState === "processing" && "bg-muted cursor-wait",
-                    voiceState === "speaking" && "bg-primary/80",
-                    voiceState === "idle" && "bg-primary hover:bg-primary/90"
+                    voiceState === "speaking" && "bg-primary/80 animate-bounce",
+                    voiceState === "idle" && "bg-primary hover:bg-primary/90 hover:scale-105"
                   )}
                 >
                   {voiceState === "listening" ? (
-                    <MicOff className="h-6 w-6" />
+                    <MicOff className="h-7 w-7" />
                   ) : voiceState === "processing" ? (
-                    <Loader2 className="h-6 w-6 animate-spin" />
+                    <Loader2 className="h-7 w-7 animate-spin" />
                   ) : voiceState === "speaking" ? (
-                    <Volume2 className="h-6 w-6 animate-pulse" />
+                    <Volume2 className="h-7 w-7 animate-pulse" />
                   ) : (
-                    <Mic className="h-6 w-6" />
+                    <Mic className="h-7 w-7" />
                   )}
                 </Button>
               </div>
-            )}
+              <span className="text-xs text-muted-foreground animate-in fade-in">
+                {voiceState === "listening" && "🎙️ শুনছি..."}
+                {voiceState === "processing" && "⏳ প্রক্রিয়াকরণ..."}
+                {voiceState === "speaking" && "🔊 বলছি..."}
+                {voiceState === "idle" && "মাইক ট্যাপ করুন"}
+              </span>
+            </div>
+          )}
 
-            {/* Modules below avatar */}
+          {/* Voice transcript/response panel */}
+          {(transcript || voiceResponse || voiceError) && (
+            <div className="w-full mt-3 glass rounded-2xl p-4 space-y-2 max-h-36 overflow-y-auto animate-in slide-in-from-bottom-2 duration-300">
+              {transcript && (
+                <div className="bg-secondary/50 rounded-lg p-2">
+                  <p className="text-xs text-muted-foreground">আপনি বললেন:</p>
+                  <p className="text-sm">{transcript}</p>
+                </div>
+              )}
+              {voiceResponse && (
+                <div className="bg-primary/10 rounded-lg p-2">
+                  <p className="text-xs text-muted-foreground">সহকারী:</p>
+                  <p className="text-sm">{voiceResponse}</p>
+                </div>
+              )}
+              {voiceError && (
+                <p className="text-sm text-destructive">{voiceError}</p>
+              )}
+            </div>
+          )}
+
+          {/* Modules below */}
+          <div className="w-full mt-4 space-y-3">
             <Compliments />
             <DermatologyModule />
           </div>

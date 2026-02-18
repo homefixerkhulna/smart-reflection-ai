@@ -1,4 +1,4 @@
-import { ArrowLeft, User, Monitor, Camera, Shield, Sun, Moon, Laptop } from "lucide-react";
+import { ArrowLeft, User, Monitor, Camera, Shield, Sun, Moon, Laptop, Box } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -40,6 +40,26 @@ const Settings = () => {
   const [showNews, setShowNews] = useState(true);
   
   const [analysisFrequency, setAnalysisFrequency] = useState("daily");
+
+  // Avatar model selection
+  const AVATAR_MODELS = [
+    { id: "default", label: "ডিফল্ট অবতার", url: "/698bdd8efcad0d2f33536b28.glb" },
+    { id: "model1", label: "মডেল ১", url: "/model.glb" },
+    { id: "model2", label: "মডেল ২", url: "/model (1).glb" },
+    { id: "animation", label: "অ্যানিমেটেড", url: "/animation.glb" },
+  ];
+  const [selectedAvatarModel, setSelectedAvatarModel] = useState(() => {
+    return localStorage.getItem("hfd_avatar_model") || AVATAR_MODELS[0].url;
+  });
+
+  const handleAvatarModelChange = (url: string) => {
+    setSelectedAvatarModel(url);
+    localStorage.setItem("hfd_avatar_model", url);
+    toast({
+      title: "অবতার পরিবর্তন",
+      description: "3D অবতার মডেল আপডেট হয়েছে",
+    });
+  };
 
   useEffect(() => {
     if (user) {
@@ -336,6 +356,30 @@ const Settings = () => {
                     </div>
                   </RadioGroup>
                 </div>
+              </div>
+
+              <div className="border-t pt-6">
+                <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                  <Box className="w-5 h-5" />
+                  3D Avatar Model
+                </h2>
+                <p className="text-sm text-muted-foreground mb-4">
+                  মিরর ড্যাশবোর্ডে প্রদর্শিত 3D অবতার মডেল নির্বাচন করুন
+                </p>
+                <RadioGroup value={selectedAvatarModel} onValueChange={handleAvatarModelChange} className="gap-3">
+                  {AVATAR_MODELS.map((model) => (
+                    <div key={model.id} className="flex items-center space-x-3 rounded-lg border border-border p-4 hover:bg-accent/50 cursor-pointer transition-colors">
+                      <RadioGroupItem value={model.url} id={`avatar-${model.id}`} />
+                      <Label htmlFor={`avatar-${model.id}`} className="flex items-center gap-2 cursor-pointer flex-1">
+                        <Box className="w-5 h-5 text-muted-foreground" />
+                        <div>
+                          <div className="font-medium">{model.label}</div>
+                          <div className="text-xs text-muted-foreground">{model.url}</div>
+                        </div>
+                      </Label>
+                    </div>
+                  ))}
+                </RadioGroup>
               </div>
 
               <div className="border-t pt-6">

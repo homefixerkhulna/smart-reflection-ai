@@ -122,21 +122,37 @@ export async function createAvatarViewer(
 
     // Subtle breathing
     const breathe = 1 + Math.sin(elapsed * 1.5) * 0.008;
-    model.scale.setScalar(breathe);
 
-    // Glow effect when speaking
-    if (_speaking) {
-      const pulse = 0.5 + Math.sin(elapsed * 6) * 0.5;
-      rimLight.intensity = 0.4 + pulse * 0.6;
-    } else {
-      rimLight.intensity = 0.4;
+    // Listening: gentle scale pulse + green tint
+    if (_listening) {
+      const listenPulse = 1 + Math.sin(elapsed * 4) * 0.015;
+      model.scale.setScalar(listenPulse);
+      rimLight.color.setHex(0x44ff88);
+      rimLight.intensity = 0.6 + Math.sin(elapsed * 3) * 0.3;
     }
-
-    // Thinking rotation
-    if (_thinking) {
-      model.rotation.y = Math.sin(elapsed * 0.8) * 0.05;
-    } else if (!_speaking) {
-      model.rotation.y *= 0.95; // ease back
+    // Speaking: stronger glow + bounce
+    else if (_speaking) {
+      const speakBounce = 1 + Math.sin(elapsed * 6) * 0.02;
+      model.scale.setScalar(speakBounce);
+      rimLight.color.setHex(0x6688ff);
+      const pulse = 0.5 + Math.sin(elapsed * 6) * 0.5;
+      rimLight.intensity = 0.5 + pulse * 0.8;
+      // Subtle head sway when speaking
+      model.rotation.y = Math.sin(elapsed * 2) * 0.03;
+    }
+    // Thinking: rotation + amber glow
+    else if (_thinking) {
+      model.scale.setScalar(breathe);
+      rimLight.color.setHex(0xffaa44);
+      rimLight.intensity = 0.5 + Math.sin(elapsed * 2) * 0.3;
+      model.rotation.y = Math.sin(elapsed * 0.8) * 0.06;
+    }
+    // Idle
+    else {
+      model.scale.setScalar(breathe);
+      rimLight.color.setHex(0x8888ff);
+      rimLight.intensity = 0.4;
+      model.rotation.y *= 0.95;
     }
 
     renderer.render(scene, camera);

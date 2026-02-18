@@ -111,54 +111,85 @@ export const useVoiceAssistant = () => {
     
     setError(null);
     setTranscript("");
-    
-    const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
-    recognitionRef.current = new SpeechRecognitionAPI();
-    
-    recognitionRef.current.continuous = false;
-    recognitionRef.current.interimResults = true;
-    recognitionRef.current.lang = "en-US";
 
-    recognitionRef.current.onstart = () => {
-      setState("listening");
-    };
+    // Stop any previous instance first
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.abort();
+      } catch (_) {}
+      recognitionRef.current = null;
+    }
 
-    recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
-      let finalTranscript = "";
-      let interimTranscript = "";
+    // Cancel any ongoing speech synthesis
+    if (synthRef.current) {
+      synthRef.current.cancel();
+    }
 
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const result = event.results[i];
-        if (result.isFinal) {
-          finalTranscript += result[0].transcript;
-        } else {
-          interimTranscript += result[0].transcript;
+    // Small delay to let Chrome release the previous recognition session
+    setTimeout(() => {
+      try {
+        const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognitionAPI) {
+          setError("Speech Recognition এই ব্রাউজারে সাপোর্ট করে না।");
+          return;
         }
-      }
 
-      setTranscript(finalTranscript || interimTranscript);
+        const recognition = new SpeechRecognitionAPI();
+        recognitionRef.current = recognition;
+        
+        recognition.continuous = false;
+        recognition.interimResults = true;
+        recognition.lang = "en-US";
 
-      if (finalTranscript) {
-        processWithAI(finalTranscript);
-      }
-    };
+        recognition.onstart = () => {
+          setState("listening");
+        };
 
-    recognitionRef.current.onerror = (event: SpeechRecognitionErrorEvent) => {
-      console.error("Speech recognition error:", event.error);
-      if (event.error !== "no-speech") {
-        setError(`Speech recognition error: ${event.error}`);
-      }
-      setState("idle");
-    };
+        recognition.onresult = (event: SpeechRecognitionEvent) => {
+          let finalTranscript = "";
+          let interimTranscript = "";
 
-    recognitionRef.current.onend = () => {
-      if (state === "listening") {
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            const result = event.results[i];
+            if (result.isFinal) {
+              finalTranscript += result[0].transcript;
+            } else {
+              interimTranscript += result[0].transcript;
+            }
+          }
+
+          setTranscript(finalTranscript || interimTranscript);
+
+          if (finalTranscript) {
+            processWithAI(finalTranscript);
+          }
+        };
+
+        recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+          console.error("Speech recognition error:", event.error);
+          if (event.error === "not-allowed") {
+            setError("মাইক্রোফোন অনুমতি দিন। ব্রাউজারের অ্যাড্রেস বারে 🔒 আইকনে ক্লিক করুন।");
+          } else if (event.error === "aborted" || event.error === "no-speech") {
+            // Silently handle — not a real error
+          } else {
+            setError(`স্পিচ রেকগনিশন সমস্যা: ${event.error}। আবার চেষ্টা করুন।`);
+          }
+          setState("idle");
+        };
+
+        recognition.onend = () => {
+          // Only reset to idle if we're still in listening state
+          setState((prev) => prev === "listening" ? "idle" : prev);
+        };
+
+        recognition.start();
+      } catch (err) {
+        console.error("Failed to start speech recognition:", err);
+        setError("স্পিচ রেকগনিশন শুরু করা যাচ্ছে না। পেজ রিফ্রেশ করে আবার চেষ্টা করুন।");
         setState("idle");
       }
-    };
-
-    recognitionRef.current.start();
-  }, [isSupported, processWithAI, state]);
+    }, 150);
+  }, [isSupported, processWithAI]);
 
   const stopListening = useCallback(() => {
     if (recognitionRef.current) {

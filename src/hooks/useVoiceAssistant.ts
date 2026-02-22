@@ -4,9 +4,26 @@ import { supabase } from "@/integrations/supabase/client";
 
 type VoiceState = "idle" | "listening" | "processing" | "speaking";
 
-// Use any for cross-browser SpeechRecognition compatibility
-
 const WAKE_WORDS = ["hey ivy", "ivy", "আইভি", "আইভী", "আইবি"];
+
+export interface VoiceCommand {
+  triggers: string[];
+  labelBn: string;
+  labelEn: string;
+}
+
+export const VOICE_COMMANDS: VoiceCommand[] = [
+  { triggers: ["open tasks", "টাস্ক খোলো", "টাস্ক দেখাও"], labelBn: "টাস্ক খোলো", labelEn: "Open Tasks" },
+  { triggers: ["open settings", "সেটিংস খোলো"], labelBn: "সেটিংস খোলো", labelEn: "Open Settings" },
+  { triggers: ["open analysis", "open history", "বিশ্লেষণ দেখাও", "বিশ্লেষণ খোলো", "হিস্টোরি খোলো"], labelBn: "বিশ্লেষণ দেখাও", labelEn: "Open Analysis" },
+  { triggers: ["open recommendations", "পরামর্শ দেখাও", "রেকমেন্ডেশন খোলো"], labelBn: "পরামর্শ দেখাও", labelEn: "Open Recommendations" },
+  { triggers: ["open trends", "ট্রেন্ড দেখাও"], labelBn: "ট্রেন্ড দেখাও", labelEn: "Open Trends" },
+  { triggers: ["open compare", "তুলনা করো", "তুলনা দেখাও"], labelBn: "তুলনা করো", labelEn: "Open Compare" },
+  { triggers: ["go home", "হোম যাও", "হোমে যাও"], labelBn: "হোমে যাও", labelEn: "Go Home" },
+  { triggers: ["take photo", "ছবি তোলো", "ফটো তোলো"], labelBn: "ছবি তোলো", labelEn: "Take Photo" },
+  { triggers: ["logout", "লগআউট"], labelBn: "লগআউট", labelEn: "Logout" },
+  { triggers: ["help", "হেল্প", "সাহায্য", "কমান্ড দেখাও"], labelBn: "সাহায্য / হেল্প", labelEn: "Show Help" },
+];
 
 export const useVoiceAssistant = () => {
   const navigate = useNavigate();
@@ -15,6 +32,7 @@ export const useVoiceAssistant = () => {
   const [transcript, setTranscript] = useState("");
   const [response, setResponse] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [showHelp, setShowHelp] = useState(false);
 
   const recognitionRef = useRef<any>(null);
   const synthRef = useRef<SpeechSynthesis | null>(null);
@@ -51,18 +69,41 @@ export const useVoiceAssistant = () => {
   };
 
   const handleLocalCommand = useCallback(async (command: string) => {
-    const routes: Record<string, { path: string; label: string }> = {
-      "open tasks": { path: "/tasks", label: "Opening tasks page" },
-      "open settings": { path: "/settings", label: "Opening settings" },
-      "open analysis": { path: "/history", label: "Opening analysis history" },
-      "open history": { path: "/history", label: "Opening analysis history" },
-      "open recommendations": { path: "/recommendations", label: "Opening recommendations" },
-      "open trends": { path: "/trends", label: "Opening trends" },
-      "open compare": { path: "/compare", label: "Opening comparison" },
-      "go home": { path: "/", label: "Going home" },
+    const routeMap: Record<string, { path: string; label: string }> = {
+      "open tasks": { path: "/tasks", label: "টাস্ক পেজ খুলছি" },
+      "টাস্ক খোলো": { path: "/tasks", label: "টাস্ক পেজ খুলছি" },
+      "টাস্ক দেখাও": { path: "/tasks", label: "টাস্ক পেজ খুলছি" },
+      "open settings": { path: "/settings", label: "সেটিংস খুলছি" },
+      "সেটিংস খোলো": { path: "/settings", label: "সেটিংস খুলছি" },
+      "open analysis": { path: "/history", label: "বিশ্লেষণ দেখাচ্ছি" },
+      "open history": { path: "/history", label: "বিশ্লেষণ দেখাচ্ছি" },
+      "বিশ্লেষণ দেখাও": { path: "/history", label: "বিশ্লেষণ দেখাচ্ছি" },
+      "বিশ্লেষণ খোলো": { path: "/history", label: "বিশ্লেষণ দেখাচ্ছি" },
+      "হিস্টোরি খোলো": { path: "/history", label: "বিশ্লেষণ দেখাচ্ছি" },
+      "open recommendations": { path: "/recommendations", label: "পরামর্শ দেখাচ্ছি" },
+      "পরামর্শ দেখাও": { path: "/recommendations", label: "পরামর্শ দেখাচ্ছি" },
+      "রেকমেন্ডেশন খোলো": { path: "/recommendations", label: "পরামর্শ দেখাচ্ছি" },
+      "open trends": { path: "/trends", label: "ট্রেন্ড দেখাচ্ছি" },
+      "ট্রেন্ড দেখাও": { path: "/trends", label: "ট্রেন্ড দেখাচ্ছি" },
+      "open compare": { path: "/compare", label: "তুলনা দেখাচ্ছি" },
+      "তুলনা করো": { path: "/compare", label: "তুলনা দেখাচ্ছি" },
+      "তুলনা দেখাও": { path: "/compare", label: "তুলনা দেখাচ্ছি" },
+      "go home": { path: "/", label: "হোমে যাচ্ছি" },
+      "হোম যাও": { path: "/", label: "হোমে যাচ্ছি" },
+      "হোমে যাও": { path: "/", label: "হোমে যাচ্ছি" },
     };
 
-    for (const [trigger, { path, label }] of Object.entries(routes)) {
+    // Help command
+    const helpTriggers = ["help", "হেল্প", "সাহায্য", "কমান্ড দেখাও"];
+    for (const trigger of helpTriggers) {
+      if (command.includes(trigger)) {
+        setShowHelp(true);
+        await speak("এখানে সব কমান্ড দেখানো হচ্ছে।");
+        return true;
+      }
+    }
+
+    for (const [trigger, { path, label }] of Object.entries(routeMap)) {
       if (command.includes(trigger)) {
         navigate(path);
         await speak(label);
@@ -70,15 +111,15 @@ export const useVoiceAssistant = () => {
       }
     }
 
-    if (command.includes("take photo") || command.includes("ছবি তোলো")) {
+    if (command.includes("take photo") || command.includes("ছবি তোলো") || command.includes("ফটো তোলো")) {
       navigate("/");
-      await speak("Ready to take photo. Please use the camera button.");
+      await speak("ক্যামেরা বাটন ব্যবহার করে ছবি তুলুন।");
       return true;
     }
 
     if (command.includes("logout") || command.includes("লগআউট")) {
       await supabase.auth.signOut();
-      await speak("Logged out successfully");
+      await speak("লগআউট সফল হয়েছে");
       return true;
     }
 
@@ -231,6 +272,8 @@ export const useVoiceAssistant = () => {
     transcript,
     response,
     error,
+    showHelp,
+    setShowHelp,
     isSupported: true,
     startListening,
     stopListening,

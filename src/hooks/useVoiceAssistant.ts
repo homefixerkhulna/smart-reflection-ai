@@ -37,6 +37,7 @@ export const useVoiceAssistant = () => {
   const recognitionRef = useRef<any>(null);
   const synthRef = useRef<SpeechSynthesis | null>(null);
   const isProcessingRef = useRef(false);
+  const startListeningRef = useRef<() => void>(() => {});
 
   const speak = useCallback(async (text: string) => {
     if (!synthRef.current) return;
@@ -49,7 +50,7 @@ export const useVoiceAssistant = () => {
     utterance.onstart = () => setState("speaking");
     utterance.onend = () => {
       setState("listening");
-      startListeningInternal();
+      startListeningRef.current();
     };
     utterance.onerror = () => {
       setState("idle");
@@ -221,7 +222,7 @@ export const useVoiceAssistant = () => {
 
         recognition.onend = () => {
           if (!isProcessingRef.current) {
-            setTimeout(startListeningInternal, 500);
+            setTimeout(() => startListeningRef.current(), 500);
           }
         };
 
@@ -234,15 +235,23 @@ export const useVoiceAssistant = () => {
     }, 150);
   }, [handleLocalCommand, callAI]);
 
+  // Keep ref in sync without causing re-renders
+  useEffect(() => {
+    startListeningRef.current = startListeningInternal;
+  }, [startListeningInternal]);
+
+  // Only run once on mount
   useEffect(() => {
     synthRef.current = window.speechSynthesis;
-    startListeningInternal();
+    // Small delay to let refs settle
+    const timer = setTimeout(() => startListeningRef.current(), 300);
 
     return () => {
+      clearTimeout(timer);
       recognitionRef.current?.abort();
       synthRef.current?.cancel();
     };
-  }, [startListeningInternal]);
+  }, []);
 
   const stopListening = useCallback(() => {
     if (recognitionRef.current) {

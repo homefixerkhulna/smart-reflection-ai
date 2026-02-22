@@ -16,6 +16,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useVoiceAssistant } from "@/hooks/useVoiceAssistant";
 import { supabase } from "@/integrations/supabase/client";
 import Avatar3D from "@/components/Avatar3D";
+import WaveformVisualizer from "@/components/WaveformVisualizer";
 import { cn } from "@/lib/utils";
 
 const AVATAR_MODELS = [
@@ -148,35 +149,45 @@ const Index = () => {
           {/* Mic Button — directly below avatar */}
           {voiceSupported && (
             <div className="flex flex-col items-center gap-2 mt-2">
-              {/* Glow ring around mic */}
-              <div className={cn(
-                "relative rounded-full p-1 transition-all duration-500",
-                voiceState === "listening" && "shadow-[0_0_24px_4px_hsl(var(--destructive)/0.5)]",
-                voiceState === "speaking" && "shadow-[0_0_24px_4px_hsl(var(--primary)/0.4)]",
-                voiceState === "processing" && "shadow-[0_0_16px_2px_hsl(var(--muted-foreground)/0.3)]",
-              )}>
-                <Button
-                  size="lg"
-                  onClick={handleMicClick}
-                  disabled={voiceState === "processing" || voiceState === "speaking"}
-                  className={cn(
-                    "h-16 w-16 rounded-full shadow-xl transition-all duration-300",
-                    voiceState === "listening" && "bg-destructive hover:bg-destructive/90 animate-pulse scale-110",
-                    voiceState === "processing" && "bg-muted cursor-wait",
-                    voiceState === "speaking" && "bg-primary/80 animate-bounce",
-                    voiceState === "idle" && "bg-primary hover:bg-primary/90 hover:scale-105"
-                  )}
-                >
-                  {voiceState === "listening" ? (
-                    <MicOff className="h-7 w-7" />
-                  ) : voiceState === "processing" ? (
-                    <Loader2 className="h-7 w-7 animate-spin" />
-                  ) : voiceState === "speaking" ? (
-                    <Volume2 className="h-7 w-7 animate-pulse" />
-                  ) : (
-                    <Mic className="h-7 w-7" />
-                  )}
-                </Button>
+              {/* Waveform + Mic container */}
+              <div className="relative flex items-center justify-center" style={{ width: 152, height: 152 }}>
+                {/* Waveform ring */}
+                <WaveformVisualizer
+                  isActive={voiceState === "listening"}
+                  barCount={36}
+                  radius={48}
+                  color="hsl(var(--destructive))"
+                />
+                {/* Glow ring */}
+                <div className={cn(
+                  "relative z-10 rounded-full p-1 transition-all duration-500",
+                  voiceState === "listening" && "shadow-[0_0_24px_4px_hsl(var(--destructive)/0.5)]",
+                  voiceState === "speaking" && "shadow-[0_0_24px_4px_hsl(var(--primary)/0.4)]",
+                  voiceState === "processing" && "shadow-[0_0_16px_2px_hsl(var(--muted-foreground)/0.3)]",
+                )}>
+                  <Button
+                    size="lg"
+                    onClick={handleMicClick}
+                    disabled={voiceState === "processing" || voiceState === "speaking"}
+                    className={cn(
+                      "h-16 w-16 rounded-full shadow-xl transition-all duration-300",
+                      voiceState === "listening" && "bg-destructive hover:bg-destructive/90 scale-110",
+                      voiceState === "processing" && "bg-muted cursor-wait",
+                      voiceState === "speaking" && "bg-primary/80 animate-bounce",
+                      voiceState === "idle" && "bg-primary hover:bg-primary/90 hover:scale-105"
+                    )}
+                  >
+                    {voiceState === "listening" ? (
+                      <MicOff className="h-7 w-7" />
+                    ) : voiceState === "processing" ? (
+                      <Loader2 className="h-7 w-7 animate-spin" />
+                    ) : voiceState === "speaking" ? (
+                      <Volume2 className="h-7 w-7 animate-pulse" />
+                    ) : (
+                      <Mic className="h-7 w-7" />
+                    )}
+                  </Button>
+                </div>
               </div>
               <span className="text-xs text-muted-foreground animate-in fade-in">
                 {voiceState === "listening" && "🎙️ শুনছি..."}

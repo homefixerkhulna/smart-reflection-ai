@@ -51,26 +51,37 @@ export const useVoiceAssistant = () => {
   };
 
   const handleLocalCommand = useCallback(async (command: string) => {
-    if (command.includes("open tasks")) {
-      navigate("/tasks");
-      await speak("Opening tasks page");
-      return true;
+    const routes: Record<string, { path: string; label: string }> = {
+      "open tasks": { path: "/tasks", label: "Opening tasks page" },
+      "open settings": { path: "/settings", label: "Opening settings" },
+      "open analysis": { path: "/history", label: "Opening analysis history" },
+      "open history": { path: "/history", label: "Opening analysis history" },
+      "open recommendations": { path: "/recommendations", label: "Opening recommendations" },
+      "open trends": { path: "/trends", label: "Opening trends" },
+      "open compare": { path: "/compare", label: "Opening comparison" },
+      "go home": { path: "/", label: "Going home" },
+    };
+
+    for (const [trigger, { path, label }] of Object.entries(routes)) {
+      if (command.includes(trigger)) {
+        navigate(path);
+        await speak(label);
+        return true;
+      }
     }
-    if (command.includes("open settings")) {
-      navigate("/settings");
-      await speak("Opening settings");
-      return true;
-    }
-    if (command.includes("go home")) {
+
+    if (command.includes("take photo") || command.includes("ছবি তোলো")) {
       navigate("/");
-      await speak("Going home");
+      await speak("Ready to take photo. Please use the camera button.");
       return true;
     }
-    if (command.includes("logout")) {
+
+    if (command.includes("logout") || command.includes("লগআউট")) {
       await supabase.auth.signOut();
       await speak("Logged out successfully");
       return true;
     }
+
     return false;
   }, [navigate, speak]);
 

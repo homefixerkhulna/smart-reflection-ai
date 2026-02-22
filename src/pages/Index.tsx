@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Settings, LogOut, ListTodo, Mic, MicOff, Loader2, Volume2 } from "lucide-react";
+import { VOICE_COMMANDS } from "@/hooks/useVoiceAssistant";
+import { Settings, LogOut, ListTodo, Mic, MicOff, Loader2, Volume2, X, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Clock } from "@/components/modules/Clock";
@@ -42,6 +43,8 @@ const Index = () => {
     transcript,
     response: voiceResponse,
     error: voiceError,
+    showHelp,
+    setShowHelp,
     isSupported: voiceSupported,
     startListening,
     stopListening,
@@ -221,6 +224,56 @@ const Index = () => {
 
       {/* Dermatology Chat Assistant */}
       <DermatologyChat analyses={analyses} />
+
+      {/* Voice Command Help Overlay */}
+      {showHelp && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="glass rounded-3xl p-6 w-full max-w-md mx-4 shadow-2xl border border-border/50 relative">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-3 right-3 rounded-full"
+              onClick={() => setShowHelp(false)}
+            >
+              <X className="w-5 h-5" />
+            </Button>
+            <h3 className="text-lg font-bold mb-1 flex items-center gap-2">
+              <HelpCircle className="w-5 h-5 text-primary" />
+              ভয়েস কমান্ড সমূহ
+            </h3>
+            <p className="text-xs text-muted-foreground mb-4">
+              "আইভি" বলে যেকোনো কমান্ড দিন
+            </p>
+            <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-1">
+              {VOICE_COMMANDS.map((cmd, i) => (
+                <div
+                  key={i}
+                  className="flex items-center justify-between bg-secondary/40 rounded-xl px-4 py-2.5"
+                >
+                  <div>
+                    <p className="text-sm font-medium">{cmd.labelBn}</p>
+                    <p className="text-xs text-muted-foreground">{cmd.labelEn}</p>
+                  </div>
+                  <div className="text-[10px] text-muted-foreground font-mono bg-background/50 rounded-lg px-2 py-1">
+                    "{cmd.triggers[0]}"
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Help button (bottom-left) */}
+      <Button
+        variant="ghost"
+        size="icon"
+        className="fixed bottom-6 left-6 z-40 glass rounded-full"
+        onClick={() => setShowHelp(true)}
+        title="ভয়েস কমান্ড হেল্প"
+      >
+        <HelpCircle className="w-5 h-5" />
+      </Button>
     </div>
   );
 };
